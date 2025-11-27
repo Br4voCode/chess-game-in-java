@@ -6,15 +6,12 @@ import chess.model.Piece;
 import chess.model.PieceType;
 import chess.model.Position;
 
-/**
- * Small evaluator: material + piece-square basic.
- */
 public class SimpleEvaluator {
 
     public int evaluate(Board board, PieceColor perspective) {
         int score = 0;
-        for (int r=0;r<8;r++) {
-            for (int c=0;c<8;c++) {
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
                 Position pos = new Position(r,c);
                 Piece p = board.getPieceAt(pos);
                 if (p == null) continue;
