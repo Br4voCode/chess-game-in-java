@@ -7,8 +7,13 @@ import java.util.List;
 
 public class Board {
     private Piece[][] grid = new Piece[8][8];
+    private Position lastMoveFrom;
+    private Position lastMoveTo;
+    private Move lastMove;
 
-    public Board() { initialize(); }
+    public Board() { 
+        initialize(); 
+    }
 
     /**
      * Standard starting position.
@@ -16,6 +21,9 @@ public class Board {
     public void initialize() {
         // clear
         for (int r = 0; r < 8; r++) for (int c = 0; c < 8; c++) grid[r][c] = null;
+        lastMove = null;
+        lastMoveFrom = null;
+        lastMoveTo = null;
 
         // white pieces (bottom side rows 7 and 6)
         grid[7][0] = new Rook(PieceColor.WHITE);
@@ -46,7 +54,9 @@ public class Board {
     }
 
     public void setPieceAt(Position pos, Piece piece) {
-        grid[pos.getRow()][pos.getCol()] = piece;
+        if (pos.isValid()) {
+            grid[pos.getRow()][pos.getCol()] = piece;
+        }
     }
 
     /**
@@ -57,7 +67,13 @@ public class Board {
         Position to = move.getTo();
         Piece p = getPieceAt(from);
         if (p == null) return;
-        // execute
+        
+        // Guardar información del movimiento
+        lastMove = move;
+        lastMoveFrom = from;
+        lastMoveTo = to;
+        
+        // Ejecutar movimiento
         setPieceAt(to, p);
         setPieceAt(from, null);
 
@@ -82,11 +98,11 @@ public class Board {
     public List<Move> getAllPossibleMoves(PieceColor color) {
         List<Move> all = new ArrayList<>();
         // generate pseudo moves
-        for (int r=0;r<8;r++) {
-            for (int c=0;c<8;c++) {
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
                 Piece p = grid[r][c];
                 if (p == null || p.getColor() != color) continue;
-                Position pos = new Position(r,c);
+                Position pos = new Position(r, c);
                 List<Move> pseudo = p.getPseudoLegalMoves(this, pos);
                 for (Move m : pseudo) {
                     // apply on a copy to test legality
@@ -102,58 +118,164 @@ public class Board {
     }
 
     /**
+     * Return all **legal** moves for a specific piece at a position.
+     */
+    public List<Move> getPossibleMovesForPiece(Position position) {
+        Piece piece = getPieceAt(position);
+        if (piece == null) return new ArrayList<>();
+        
+        PieceColor color = piece.getColor();
+        List<Move> allMoves = new ArrayList<>();
+        List<Move> pseudo = piece.getPseudoLegalMoves(this, position);
+        
+        for (Move m : pseudo) {
+            Board copy = this.copy();
+            copy.movePiece(m);
+            if (!copy.isKingInCheck(color)) {
+                allMoves.add(m);
+            }
+        }
+        return allMoves;
+    }
+
+    /**
      * Check if given color's king is in check (i.e., any opponent pseudo-move attacks king).
      */
     public boolean isKingInCheck(PieceColor color) {
         // find king position
         Position kingPos = null;
-        for (int r=0;r<8;r++) for (int c=0;c<8;c++) {
-            Piece p = grid[r][c];
-            if (p != null && p.getType() == PieceType.KING && p.getColor() == color) {
-                kingPos = new Position(r,c);
-                break;
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                Piece p = grid[r][c];
+                if (p != null && p.getType() == PieceType.KING && p.getColor() == color) {
+                    kingPos = new Position(r, c);
+                    break;
+                }
             }
+            if (kingPos != null) break;
         }
         if (kingPos == null) return false; // should not happen
 
         // check opponent pseudo moves to see if any capture king
         PieceColor opp = color.opposite();
-        for (int r=0;r<8;r++) for (int c=0;c<8;c++) {
-            Piece p = grid[r][c];
-            if (p == null || p.getColor() != opp) continue;
-            Position pos = new Position(r,c);
-            List<Move> pseudo = p.getPseudoLegalMoves(this, pos);
-            for (Move m : pseudo) {
-                if (m.getTo().equals(kingPos)) return true;
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                Piece p = grid[r][c];
+                if (p == null || p.getColor() != opp) continue;
+                Position pos = new Position(r, c);
+                List<Move> pseudo = p.getPseudoLegalMoves(this, pos);
+                for (Move m : pseudo) {
+                    if (m.getTo().equals(kingPos)) return true;
+                }
             }
         }
         return false;
     }
 
     /**
+     * Check if given color is in checkmate.
+     */
+    public boolean isCheckmate(PieceColor color) {
+        return isKingInCheck(color) && getAllPossibleMoves(color).isEmpty();
+    }
+
+    /**
+     * Check if given color is in stalemate.
+     */
+    public boolean isStalemate(PieceColor color) {
+        return !isKingInCheck(color) && getAllPossibleMoves(color).isEmpty();
+    }
+
+    /**
+     * Check if the game is drawn by insufficient material.
+     */
+    public boolean isInsufficientMaterial() {
+        int whitePieceCount = 0;
+        int blackPieceCount = 0;
+        boolean whiteHasNonKing = false;
+        boolean blackHasNonKing = false;
+        boolean hasBishopOrKnight = false;
+
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                Piece p = grid[r][c];
+                if (p != null) {
+                    if (p.getColor() == PieceColor.WHITE) {
+                        whitePieceCount++;
+                        if (p.getType() != PieceType.KING) {
+                            whiteHasNonKing = true;
+                            if (p.getType() == PieceType.BISHOP || p.getType() == PieceType.KNIGHT) {
+                                hasBishopOrKnight = true;
+                            }
+                        }
+                    } else {
+                        blackPieceCount++;
+                        if (p.getType() != PieceType.KING) {
+                            blackHasNonKing = true;
+                            if (p.getType() == PieceType.BISHOP || p.getType() == PieceType.KNIGHT) {
+                                hasBishopOrKnight = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Rey contra Rey
+        if (whitePieceCount == 1 && blackPieceCount == 1) return true;
+        
+        // Rey y alfil contra Rey
+        // Rey y caballo contra Rey
+        if ((whitePieceCount == 2 && !whiteHasNonKing && hasBishopOrKnight) ||
+            (blackPieceCount == 2 && !blackHasNonKing && hasBishopOrKnight)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Undo the last move (requires tracking moves history).
+     * Simplified version - you might want to implement proper move history.
+     */
+    public boolean undoLastMove() {
+        if (lastMove == null) return false;
+        
+        // This is a simplified undo - for a complete implementation
+        // you'd need to store the entire move history with captured pieces
+        // For now, just reinitialize the board
+        initialize();
+        return true;
+    }
+
+    /**
      * Produce a deep copy of this board (pieces are new instances of same type/color).
-     * Important: piece objects are recreated (shallow copy would cause shared objects).
      */
     public Board copy() {
         Board b = new Board();
         // prevent initialize override
-        for (int r=0;r<8;r++) for (int c=0;c<8;c++) b.grid[r][c] = null;
-        for (int r=0;r<8;r++) for (int c=0;c<8;c++) {
-            Piece p = this.grid[r][c];
-            if (p == null) continue;
-            PieceColor col = p.getColor();
-            PieceType t = p.getType();
-            Piece newP = null;
-            switch (t) {
-                case KING: newP = new King(col); break;
-                case QUEEN: newP = new Queen(col); break;
-                case ROOK: newP = new Rook(col); break;
-                case BISHOP: newP = new Bishop(col); break;
-                case KNIGHT: newP = new Knight(col); break;
-                case PAWN: newP = new Pawn(col); break;
+        for (int r = 0; r < 8; r++) for (int c = 0; c < 8; c++) b.grid[r][c] = null;
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                Piece p = this.grid[r][c];
+                if (p == null) continue;
+                PieceColor col = p.getColor();
+                PieceType t = p.getType();
+                Piece newP = null;
+                switch (t) {
+                    case KING: newP = new King(col); break;
+                    case QUEEN: newP = new Queen(col); break;
+                    case ROOK: newP = new Rook(col); break;
+                    case BISHOP: newP = new Bishop(col); break;
+                    case KNIGHT: newP = new Knight(col); break;
+                    case PAWN: newP = new Pawn(col); break;
+                }
+                b.grid[r][c] = newP;
             }
-            b.grid[r][c] = newP;
         }
+        b.lastMove = this.lastMove;
+        b.lastMoveFrom = this.lastMoveFrom;
+        b.lastMoveTo = this.lastMoveTo;
         return b;
     }
 
@@ -162,7 +284,80 @@ public class Board {
      */
     public Piece[][] getGridCopyForDisplay() {
         Piece[][] out = new Piece[8][8];
-        for (int r=0;r<8;r++) for (int c=0;c<8;c++) out[r][c] = grid[r][c];
+        for (int r = 0; r < 8; r++) for (int c = 0; c < 8; c++) out[r][c] = grid[r][c];
         return out;
+    }
+
+    /**
+     * Get last move information (for highlighting)
+     */
+    public Move getLastMove() {
+        return lastMove;
+    }
+
+    public Position getLastMoveFrom() {
+        return lastMoveFrom;
+    }
+
+    public Position getLastMoveTo() {
+        return lastMoveTo;
+    }
+
+    /**
+     * Check if a position is under attack by the given color
+     */
+    public boolean isSquareUnderAttack(Position position, PieceColor attackerColor) {
+        if (position == null || !position.isValid()) return false;
+        
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                Piece p = grid[r][c];
+                if (p == null || p.getColor() != attackerColor) continue;
+                Position pos = new Position(r, c);
+                List<Move> pseudo = p.getPseudoLegalMoves(this, pos);
+                for (Move m : pseudo) {
+                    if (m.getTo().equals(position)) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get all pieces of a specific color
+     */
+    public List<Position> getPiecePositions(PieceColor color) {
+        List<Position> positions = new ArrayList<>();
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                Piece p = grid[r][c];
+                if (p != null && p.getColor() == color) {
+                    positions.add(new Position(r, c));
+                }
+            }
+        }
+        return positions;
+    }
+
+    /**
+     * Check if the move is a capture move
+     */
+    public boolean isCaptureMove(Move move) {
+        Piece targetPiece = getPieceAt(move.getTo());
+        return targetPiece != null;
+    }
+
+    /**
+     * Clear the board (for testing/reset)
+     */
+    public void clear() {
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                grid[r][c] = null;
+            }
+        }
+        lastMove = null;
+        lastMoveFrom = null;
+        lastMoveTo = null;
     }
 }
