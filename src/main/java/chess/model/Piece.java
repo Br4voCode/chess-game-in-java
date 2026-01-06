@@ -21,24 +21,24 @@ public abstract class Piece {
     public abstract List<Move> getPseudoLegalMoves(Board board, Position pos);
 
     public String toUnicode() {
-        // simple unicode chess pieces
+        // Devolver identificadores simples para las piezas
         if (color == PieceColor.WHITE) {
             switch (type) {
-                case KING: return "\u2654";
-                case QUEEN: return "\u2655";
-                case ROOK: return "\u2656";
-                case BISHOP: return "\u2657";
-                case KNIGHT: return "\u2658";
-                case PAWN: return "\u2659";
+                case KING: return "k";
+                case QUEEN: return "q";
+                case ROOK: return "r";
+                case BISHOP: return "b";
+                case KNIGHT: return "n";
+                case PAWN: return "p";
             }
         } else {
             switch (type) {
-                case KING: return "\u265A";
-                case QUEEN: return "\u265B";
-                case ROOK: return "\u265C";
-                case BISHOP: return "\u265D";
-                case KNIGHT: return "\u265E";
-                case PAWN: return "\u265F";
+                case KING: return "K";
+                case QUEEN: return "Q";
+                case ROOK: return "R";
+                case BISHOP: return "B";
+                case KNIGHT: return "N";
+                case PAWN: return "P";
             }
         }
         return "?";

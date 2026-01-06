@@ -50,6 +50,21 @@
                     <mainClass>chess.Main</mainClass>
                 </configuration>
             </plugin>
+            
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>chess.Main</mainClass>
+                    <args>
+                        <arg>--module-path</arg>
+                        <arg>${javafx.runtime.path}</arg>
+                        <arg>--add-modules</arg>
+                        <arg>javafx.controls,javafx.fxml</arg>
+                    </args>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

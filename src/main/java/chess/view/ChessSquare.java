@@ -42,8 +42,8 @@ public class ChessSquare {
 
 	// Estado
 	private boolean isSelected = false;
-	private boolean useImages = false;
-	private String pieceSet = "default";
+	private boolean useImages = true; // Siempre usar imágenes
+	private String pieceSet = "classic";
 	private String currentPieceSymbol = "";
 
 	public ChessSquare(Position position) {
@@ -157,61 +157,50 @@ public class ChessSquare {
 	}
 
 	private void updatePieceRepresentation(String pieceSymbol) {
-		if (useImages) {
-			if (pieceSymbol == null || pieceSymbol.isEmpty()) {
-				pieceLabel.setVisible(false);
-				pieceImageView.setVisible(false);
-			} else {
-				pieceLabel.setVisible(false);
-				pieceImageView.setVisible(true);
-				loadPieceImage(pieceSymbol);
-			}
+		// Siempre ocultar el label de texto
+		pieceLabel.setVisible(false);
+		
+		if (pieceSymbol == null || pieceSymbol.isEmpty()) {
+			pieceImageView.setVisible(false);
 		} else {
-			if (pieceSymbol == null || pieceSymbol.isEmpty()) {
-				pieceLabel.setText("");
-				pieceImageView.setVisible(false);
-			} else {
-				pieceLabel.setText(pieceSymbol);
-				pieceLabel.setVisible(true);
-				pieceImageView.setVisible(false);
-
-				char firstChar = pieceSymbol.charAt(0);
-				boolean isWhitePiece = firstChar == '♔' || firstChar == '♕' || firstChar == '♖' || 
-						firstChar == '♗' || firstChar == '♘' || firstChar == '♙';
-				pieceLabel.setTextFill(isWhitePiece ? Color.WHITE : Color.rgb(40, 40, 40));
-			}
+			pieceImageView.setVisible(true);
+			loadPieceImage(pieceSymbol);
 		}
 	}
 
 	private void loadPieceImage(String pieceSymbol) {
+		String imagePath = String.format("/images/pieces/%s/%s.png", pieceSet, getImageName(pieceSymbol));
 		try {
-			String imagePath = String.format("/pieces/%s/%s.png", pieceSet, getImageName(pieceSymbol));
 			Image image = new Image(getClass().getResourceAsStream(imagePath));
 			pieceImageView.setImage(image);
 		} catch (Exception e) {
+			System.err.println("Error cargando imagen: " + imagePath + " - " + e.getMessage());
 			pieceImageView.setVisible(false);
-			if (pieceSymbol != null && !pieceSymbol.isEmpty()) {
-				pieceLabel.setText(pieceSymbol);
-				pieceLabel.setVisible(true);
-			}
 		}
 	}
 
 	private String getImageName(String pieceSymbol) {
-		switch (pieceSymbol) {
-		case "♔": return "white_king";
-		case "♕": return "white_queen";
-		case "♖": return "white_rook";
-		case "♗": return "white_bishop";
-		case "♘": return "white_knight";
-		case "♙": return "white_pawn";
-		case "♚": return "black_king";
-		case "♛": return "black_queen";
-		case "♜": return "black_rook";
-		case "♝": return "black_bishop";
-		case "♞": return "black_knight";
-		case "♟": return "black_pawn";
-		default: return pieceSymbol.toLowerCase();
+		// Mapear nombres de piezas a archivos de imagen
+		switch (pieceSymbol.toLowerCase()) {
+			// Piezas blancas
+			case "k": case "king_white": case "white_king": return "white_king";
+			case "q": case "queen_white": case "white_queen": return "white_queen";
+			case "r": case "rook_white": case "white_rook": return "white_rook";
+			case "b": case "bishop_white": case "white_bishop": return "white_bishop";
+			case "n": case "knight_white": case "white_knight": return "white_knight";
+			case "p": case "pawn_white": case "white_pawn": return "white_pawn";
+			
+			// Piezas negras
+			case "K": case "king_black": case "black_king": return "black_king";
+			case "Q": case "queen_black": case "black_queen": return "black_queen";
+			case "R": case "rook_black": case "black_rook": return "black_rook";
+			case "B": case "bishop_black": case "black_bishop": return "black_bishop";
+			case "N": case "knight_black": case "black_knight": return "black_knight";
+			case "P": case "pawn_black": case "black_pawn": return "black_pawn";
+			
+			default: 
+				System.err.println("Pieza desconocida: " + pieceSymbol);
+				return "white_pawn"; // Fallback
 		}
 	}
 
