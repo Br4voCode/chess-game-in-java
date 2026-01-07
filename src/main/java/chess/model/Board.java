@@ -81,6 +81,8 @@ public class Board {
             int capturedPawnCol = to.getCol();
             Position capturedPawnPos = new Position(capturedPawnRow, capturedPawnCol);
             capturedPiece = getPieceAt(capturedPawnPos);
+            System.out.println("EN PASSANT: Capturing piece at " + capturedPawnPos + 
+                             " - Piece: " + (capturedPiece != null ? capturedPiece.toUnicode() + " (" + capturedPiece.getColor() + ")" : "null"));
             setPieceAt(capturedPawnPos, null);
         }
         

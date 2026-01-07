@@ -19,7 +19,7 @@ public class GameController {
     private Game game;
     private ChessBoard chessBoard;
     private StatusBar statusBar;
-    private chess.view.GameView gameView;
+    private chess.view.IGameView gameView;
     private Position selectedPosition;
     private boolean isAnimating = false;
 
@@ -34,7 +34,7 @@ public class GameController {
         updateUI();
     }
 
-    public void setGameView(chess.view.GameView gameView) {
+    public void setGameView(chess.view.IGameView gameView) {
         this.gameView = gameView;
         updateUI(); // Sincronizar UI al vincular la vista
     }
@@ -111,15 +111,16 @@ public class GameController {
     }
 
     private void handleMoveAttempt(Position targetPosition, PieceColor currentTurn) {
-        Move attemptedMove = new Move(selectedPosition, targetPosition);
+        // Find the actual legal move to preserve flags like isEnPassant
+        Move actualMove = findLegalMove(selectedPosition, targetPosition, currentTurn);
 
-        if (isMoveLegal(attemptedMove, currentTurn)) {
+        if (actualMove != null) {
             // Check if this is a pawn promotion
             Piece movingPiece = game.getBoard().getPieceAt(selectedPosition);
             if (isPawnPromotion(movingPiece, targetPosition)) {
                 handlePawnPromotion(attemptedMove);
             } else {
-                executeMoveWithAnimation(attemptedMove);
+                executeMoveWithAnimation(actualMove);
             }
         } else {
             Piece targetPiece = game.getBoard().getPieceAt(targetPosition);
@@ -223,12 +224,20 @@ public class GameController {
                         if (capturedPiece != null && gameView != null) {
                             String pieceSymbol = capturedPiece.toUnicode();
                             boolean isWhitePiece = capturedPiece.getColor() == PieceColor.WHITE;
+                            System.out.println("CONTROLLER: Adding captured piece to UI - Symbol: " + pieceSymbol + 
+                                             ", Color: " + capturedPiece.getColor() + ", isWhitePiece: " + isWhitePiece);
                             gameView.addCapturedPiece(pieceSymbol, isWhitePiece);
                             game.clearLastCapturedPiece();
                         }
 
                         chessBoard.updateSingleSquare(from);
                         chessBoard.updateSingleSquare(to);
+                        
+                        // For en passant, also update the captured pawn's square
+                        if (move.isEnPassant()) {
+                            Position capturedPawnPos = new Position(from.getRow(), to.getCol());
+                            chessBoard.updateSingleSquare(capturedPawnPos);
+                        }
 
                         String moveDescription = movedPiece.getType() +
                                 " " + positionToChessNotation(from) +
@@ -324,11 +333,13 @@ public class GameController {
         }
     }
 
-    private boolean isMoveLegal(Move move, PieceColor color) {
+    private Move findLegalMove(Position from, Position to, PieceColor color) {
         List<Move> legalMoves = game.getBoard().getAllPossibleMoves(color);
         return legalMoves.stream()
-                .anyMatch(legalMove -> legalMove.getFrom().equals(move.getFrom()) &&
-                        legalMove.getTo().equals(move.getTo()));
+                .filter(legalMove -> legalMove.getFrom().equals(from) && 
+                                     legalMove.getTo().equals(to))
+                .findFirst()
+                .orElse(null);
     }
 
     private void updateBoardState() {

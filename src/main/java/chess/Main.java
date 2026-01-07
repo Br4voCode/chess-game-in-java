@@ -2,6 +2,7 @@ package chess;
 
 import chess.view.GameView;
 import chess.view.StartScreen;
+import chess.view.TwoPlayerGameView;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -25,7 +26,8 @@ public class Main extends Application {
     private void showStartScreen() {
         StartScreen startScreen = new StartScreen(
                 this::startNewGame,
-                this::loadLastGame
+                this::loadLastGame,
+                this::startTwoPlayerGame
         );
         Scene scene = new Scene(startScreen.getRoot(), 800, 600);
         primaryStage.setScene(scene);
@@ -40,6 +42,12 @@ public class Main extends Application {
     private void loadLastGame() {
         GameView gameView = new GameView(true);
         Scene scene = new Scene(gameView.getRoot(), 800, 600);
+        primaryStage.setScene(scene);
+    }
+
+    private void startTwoPlayerGame() {
+        TwoPlayerGameView twoPlayerView = new TwoPlayerGameView(this::showStartScreen);
+        Scene scene = new Scene(twoPlayerView.getRoot(), 800, 600);
         primaryStage.setScene(scene);
     }
 
