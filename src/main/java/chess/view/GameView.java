@@ -12,6 +12,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -87,9 +88,21 @@ public class GameView {
         whiteTimerBar = new TimerBar(gameInstance.getGameClock(), PieceColor.WHITE, false);
 
         // Panel superior con título
-        Label title = new Label("♔ Chess Game ♚");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
-        HBox titleBar = new HBox(title);
+        HBox titleContent = new HBox(10);
+        titleContent.setAlignment(Pos.CENTER);
+        
+        ImageView whiteKingImg = PieceImageLoader.loadPieceImage("♔", 32);
+        Label titleText = new Label("Chess Game");
+        titleText.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
+        ImageView blackKingImg = PieceImageLoader.loadPieceImage("♚", 32);
+        
+        if (whiteKingImg != null && blackKingImg != null) {
+            titleContent.getChildren().addAll(whiteKingImg, titleText, blackKingImg);
+        } else {
+            titleContent.getChildren().add(new Label("♔ Chess Game ♚"));
+        }
+        
+        HBox titleBar = new HBox(titleContent);
         titleBar.setAlignment(Pos.CENTER);
         titleBar.setPadding(new Insets(10));
         titleBar.setStyle("-fx-background-color: #3c3f41;");
@@ -317,10 +330,16 @@ public class GameView {
     public void addCapturedPiece(String pieceSymbol, boolean isWhitePiece) {
         VBox targetBox = isWhitePiece ? whiteCapturedBox : blackCapturedBox;
         if (targetBox != null) {
-            Label pieceLabel = new Label(pieceSymbol);
-            pieceLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: " +
-                    (isWhitePiece ? "white" : "#bbbbbb") + ";");
-            targetBox.getChildren().add(pieceLabel);
+            ImageView pieceImage = PieceImageLoader.loadPieceImage(pieceSymbol, 28);
+            if (pieceImage != null) {
+                targetBox.getChildren().add(pieceImage);
+            } else {
+                // Fallback si no se puede cargar la imagen
+                Label pieceLabel = new Label(pieceSymbol);
+                pieceLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: " +
+                        (isWhitePiece ? "white" : "#bbbbbb") + ";");
+                targetBox.getChildren().add(pieceLabel);
+            }
         }
     }
 
@@ -348,11 +367,24 @@ public class GameView {
 
     public void addMoveToHistoryWithColor(String moveNotation, chess.model.PieceColor color) {
         if (movesBox != null) {
-            String icon = (color == chess.model.PieceColor.WHITE) ? "♟" : "♙";
-
-            Label moveLabel = new Label(icon + " " + moveNotation);
+            String pieceSymbol = (color == chess.model.PieceColor.WHITE) ? "♙" : "♟";
+            
+            // Crear un HBox para contener la imagen y el texto
+            HBox moveContainer = new HBox(5);
+            moveContainer.setAlignment(Pos.CENTER_LEFT);
+            
+            // Cargar la imagen de la pieza
+            ImageView pieceImage = PieceImageLoader.loadPieceImage(pieceSymbol, 16);
+            if (pieceImage != null) {
+                moveContainer.getChildren().add(pieceImage);
+            }
+            
+            // Añadir el texto de la notación del movimiento
+            Label moveLabel = new Label(moveNotation);
             moveLabel.setStyle("-fx-text-fill: white;");
-            movesBox.getChildren().add(moveLabel);
+            moveContainer.getChildren().add(moveLabel);
+            
+            movesBox.getChildren().add(moveContainer);
 
             // Limitar a últimos 10 movimientos
             if (movesBox.getChildren().size() > 10) {
