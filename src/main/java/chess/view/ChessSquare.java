@@ -1,6 +1,10 @@
 package chess.view;
 
 import chess.model.Position;
+import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
+import javafx.animation.ScaleTransition;
+import javafx.beans.binding.Bindings;
 import javafx.scene.control.Label;
 import javafx.scene.effect.InnerShadow;
 import javafx.scene.image.Image;
@@ -10,9 +14,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.StrokeType;
-import javafx.animation.FadeTransition;
-import javafx.animation.ScaleTransition;
-import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
 /**
@@ -54,31 +55,62 @@ public class ChessSquare {
 
 	private void initializeSquare() {
 		root = new StackPane();
-		root.setPrefSize(60, 60);
+		root.setMinSize(1, 1);
+		root.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
 		// Fondo de la casilla
-		background = new Rectangle(60, 60);
-		background.setArcWidth(6);
-		background.setArcHeight(6);
+		background = new Rectangle();
+		background.widthProperty().bind(root.widthProperty());
+		background.heightProperty().bind(root.heightProperty());
+		background.arcWidthProperty().bind(
+				Bindings.createDoubleBinding(
+						() -> Math.min(12, Math.max(4, Math.min(root.getWidth(), root.getHeight()) * 0.12)),
+						root.widthProperty(),
+						root.heightProperty()
+				)
+		);
+		background.arcHeightProperty().bind(background.arcWidthProperty());
 
 		// Capa de selección (inicialmente invisible)
-		selectionOverlay = new Rectangle(60, 60);
-		selectionOverlay.setArcWidth(6);
-		selectionOverlay.setArcHeight(6);
+		selectionOverlay = new Rectangle();
+		selectionOverlay.widthProperty().bind(root.widthProperty());
+		selectionOverlay.heightProperty().bind(root.heightProperty());
+		selectionOverlay.arcWidthProperty().bind(background.arcWidthProperty());
+		selectionOverlay.arcHeightProperty().bind(background.arcHeightProperty());
 		selectionOverlay.setFill(Color.TRANSPARENT);
 		selectionOverlay.setVisible(false);
 
 		// Indicador de movimiento posible
-		possibleMoveIndicator = new Circle(7);
+		possibleMoveIndicator = new Circle();
+		possibleMoveIndicator.radiusProperty().bind(
+				Bindings.createDoubleBinding(
+						() -> Math.max(3, Math.min(root.getWidth(), root.getHeight()) * 0.12),
+						root.widthProperty(),
+						root.heightProperty()
+				)
+		);
 		possibleMoveIndicator.setFill(POSSIBLE_MOVE_DOT_COLOR);
 		possibleMoveIndicator.setVisible(false);
 		possibleMoveIndicator.setOpacity(0);
 
 		// Indicador de captura
-		captureIndicator = new Circle(25);
+		captureIndicator = new Circle();
+		captureIndicator.radiusProperty().bind(
+				Bindings.createDoubleBinding(
+						() -> Math.max(10, Math.min(root.getWidth(), root.getHeight()) * 0.42),
+						root.widthProperty(),
+						root.heightProperty()
+				)
+		);
 		captureIndicator.setFill(Color.TRANSPARENT);
 		captureIndicator.setStroke(CAPTURE_INDICATOR_COLOR);
-		captureIndicator.setStrokeWidth(3);
+		captureIndicator.strokeWidthProperty().bind(
+				Bindings.createDoubleBinding(
+						() -> Math.min(4, Math.max(2, Math.min(root.getWidth(), root.getHeight()) * 0.06)),
+						root.widthProperty(),
+						root.heightProperty()
+				)
+		);
 		captureIndicator.setStrokeType(StrokeType.OUTSIDE);
 		captureIndicator.setVisible(false);
 		captureIndicator.setScaleX(0);
@@ -87,11 +119,19 @@ public class ChessSquare {
 		// Label para texto
 		pieceLabel = new Label();
 		pieceLabel.setStyle("-fx-font-size: 28; -fx-font-weight: bold;");
+		root.widthProperty().addListener((obs, oldV, newV) -> updatePieceSizing());
+		root.heightProperty().addListener((obs, oldV, newV) -> updatePieceSizing());
 
 		// ImageView para piezas con imágenes
 		pieceImageView = new ImageView();
-		pieceImageView.setFitWidth(50);
-		pieceImageView.setFitHeight(50);
+		pieceImageView.fitWidthProperty().bind(
+				Bindings.createDoubleBinding(
+						() -> Math.max(16, Math.min(root.getWidth(), root.getHeight()) * 0.82),
+						root.widthProperty(),
+						root.heightProperty()
+				)
+		);
+		pieceImageView.fitHeightProperty().bind(pieceImageView.fitWidthProperty());
 		pieceImageView.setPreserveRatio(true);
 		pieceImageView.setVisible(false);
 
@@ -106,6 +146,16 @@ public class ChessSquare {
 				);
 
 		updateBaseColor();
+		updatePieceSizing();
+	}
+
+	private void updatePieceSizing() {
+		double size = Math.min(root.getWidth(), root.getHeight());
+		if (size <= 0) {
+			return;
+		}
+		int fontSize = (int) Math.max(12, Math.min(48, size * 0.55));
+		pieceLabel.setStyle("-fx-font-size: " + fontSize + "; -fx-font-weight: bold;");
 	}
 
 	private void setupEffectsAndAnimations() {

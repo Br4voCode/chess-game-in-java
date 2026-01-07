@@ -15,6 +15,8 @@ public class Main extends Application {
         primaryStage.setTitle("Chess with JavaFX");
         primaryStage.setMinWidth(800);
         primaryStage.setMinHeight(600);
+        // Start in fullscreen
+        primaryStage.setFullScreen(true);
 
         // Mostrar pantalla de inicio
         showStartScreen();
@@ -33,14 +35,16 @@ public class Main extends Application {
 
     private void startNewGame() {
         GameView gameView = new GameView();
-        Scene scene = new Scene(gameView.getRoot(), 800, 600);
+        Scene scene = new Scene(gameView.getRoot());
         primaryStage.setScene(scene);
+        primaryStage.setFullScreen(true);
     }
 
     private void loadLastGame() {
         GameView gameView = new GameView(true);
-        Scene scene = new Scene(gameView.getRoot(), 800, 600);
+        Scene scene = new Scene(gameView.getRoot());
         primaryStage.setScene(scene);
+        primaryStage.setFullScreen(true);
     }
 
     public static void main(String[] args) {

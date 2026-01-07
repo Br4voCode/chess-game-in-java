@@ -7,6 +7,7 @@ import chess.game.GameReconstructor;
 import chess.game.HumanPlayer;
 import chess.model.PieceColor;
 import chess.view.components.StatusBar;
+import chess.view.components.TimerBar;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -14,6 +15,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
@@ -29,7 +31,9 @@ public class GameView {
     private VBox whiteCapturedBox;
     private VBox blackCapturedBox;
     private VBox movesBox;
-
+     // Timer components
+    private TimerBar blackTimerBar;
+    private TimerBar whiteTimerBar;
     private Game gameInstance;
     private boolean shouldLoadHistory;
 
@@ -78,6 +82,9 @@ public class GameView {
 
     private void setupLayout() {
         root = new BorderPane();
+           // Timer bars (se ubican alrededor del tablero)
+        blackTimerBar = new TimerBar(gameInstance.getGameClock(), PieceColor.BLACK, true);
+        whiteTimerBar = new TimerBar(gameInstance.getGameClock(), PieceColor.WHITE, false);
 
         // Panel superior con título
         Label title = new Label("♔ Chess Game ♚");
@@ -109,7 +116,8 @@ public class GameView {
         panel.setPrefWidth(180);
         panel.setPadding(new Insets(15));
         panel.setStyle("-fx-background-color: #3c3f41; -fx-background-radius: 5;");
-
+        panel.setMaxHeight(Double.MAX_VALUE);
+        
         Label panelTitle = new Label("Game Controls");
         panelTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
 
@@ -134,14 +142,17 @@ public class GameView {
 
         gameStateValue = new Label("In progress");
         gameStateValue.setStyle("-fx-font-size: 14px; -fx-text-fill: #4caf50;");
-
+        Pane spacer = new Pane();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
         panel.getChildren().addAll(
-                panelTitle,
+          panelTitle,
                 newGameButton,
                 new Pane(), // Espaciador
                 turnLabel, turnValue,
-                gameStateLabel, gameStateValue);
-
+            spacer,
+                gameStateLabel, gameStateValue
+        );
+        
         return panel;
     }
 
@@ -150,7 +161,8 @@ public class GameView {
         panel.setPrefWidth(200);
         panel.setPadding(new Insets(15));
         panel.setStyle("-fx-background-color: #3c3f41; -fx-background-radius: 5;");
-
+        panel.setMaxHeight(Double.MAX_VALUE);
+        
         Label panelTitle = new Label("Game Info");
         panelTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
 
@@ -161,14 +173,16 @@ public class GameView {
         whiteCapturedBox = new VBox(5);
         whiteCapturedBox.setStyle("-fx-background-color: #2b2b2b; -fx-padding: 10; -fx-background-radius: 3;");
         whiteCapturedBox.setPrefHeight(100);
-
+        VBox.setVgrow(whiteCapturedBox, Priority.ALWAYS);
+        
         Label blackCapturedTitle = new Label("Black captured:");
         blackCapturedTitle.setStyle("-fx-text-fill: #bbbbbb;");
 
         blackCapturedBox = new VBox(5);
         blackCapturedBox.setStyle("-fx-background-color: #2b2b2b; -fx-padding: 10; -fx-background-radius: 3;");
         blackCapturedBox.setPrefHeight(100);
-
+        VBox.setVgrow(blackCapturedBox, Priority.ALWAYS);
+        
         // Historial de movimientos
         Label movesTitle = new Label("Move history:");
         movesTitle.setStyle("-fx-text-fill: #bbbbbb;");
@@ -176,7 +190,8 @@ public class GameView {
         movesBox = new VBox(3);
         movesBox.setStyle("-fx-background-color: #2b2b2b; -fx-padding: 10; -fx-background-radius: 3;");
         movesBox.setPrefHeight(150);
-
+        VBox.setVgrow(movesBox, Priority.ALWAYS);
+        
         panel.getChildren().addAll(
                 panelTitle,
                 whiteCapturedTitle, whiteCapturedBox,
@@ -189,27 +204,60 @@ public class GameView {
     private VBox createCenterPanel() {
         VBox panel = new VBox();
         panel.setAlignment(Pos.CENTER);
-        panel.setPadding(new Insets(20));
-
+        panel.setPadding(new Insets(0));
+        panel.setMaxHeight(Double.MAX_VALUE);
+        panel.setMaxWidth(Double.MAX_VALUE);
+        panel.setStyle("-fx-background-color: #2b2b2b;");
+        VBox.setVgrow(panel, Priority.ALWAYS);
+        
         // Tablero con animaciones
         StackPane boardWithAnimations = chessBoard.getBoardWithAnimations();
 
-        // Configurar tamaño
-        boardWithAnimations.setPrefSize(480, 480);
-        boardWithAnimations.setMaxSize(480, 480);
-        boardWithAnimations.setMinSize(480, 480);
-
-        chessBoard.getBoard().setPrefSize(480, 480);
-        chessBoard.getBoard().setMaxSize(480, 480);
-        chessBoard.getBoard().setMinSize(480, 480);
-
+        // Allow the board to use all available space (it will keep square shape internally)
+        boardWithAnimations.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        
         // Instrucciones
         Label helpLabel = new Label("Click a piece to select it, then click a destination square");
         helpLabel.setStyle("-fx-text-fill: #bbbbbb; -fx-font-size: 12px;");
 
-        VBox boardContainer = new VBox(10, boardWithAnimations, helpLabel);
+        VBox boardContainer = new VBox(10);
         boardContainer.setAlignment(Pos.CENTER);
+        boardContainer.setMaxHeight(Double.MAX_VALUE);
+        boardContainer.setMaxWidth(Double.MAX_VALUE);
+        boardContainer.setPadding(new Insets(10));
+        boardContainer.setStyle("-fx-background-color: #2b2b2b;");
+        VBox.setVgrow(boardContainer, Priority.ALWAYS);
 
+        // Contenedor vertical para tablero y relojes (relojes centrados, tablero grande)
+        VBox mainBoardVBox = new VBox(10);
+        mainBoardVBox.setAlignment(Pos.CENTER);
+        mainBoardVBox.setMaxHeight(Double.MAX_VALUE);
+        mainBoardVBox.setMaxWidth(Double.MAX_VALUE);
+        mainBoardVBox.setStyle("-fx-background-color: #2b2b2b;");
+        VBox.setVgrow(mainBoardVBox, Priority.ALWAYS);
+
+        // Reloj superior en un HBox centrado (ancho limitado al tablero)
+        HBox topTimerContainer = new HBox();
+        topTimerContainer.setAlignment(Pos.CENTER);
+        if (blackTimerBar != null) {
+            blackTimerBar.prefWidthProperty().bind(chessBoard.getBoard().widthProperty());
+            topTimerContainer.getChildren().add(blackTimerBar);
+        }
+
+        // El tablero crece libremente
+        VBox.setVgrow(boardWithAnimations, Priority.ALWAYS);
+
+        // Reloj inferior en un HBox centrado (ancho limitado al tablero)
+        HBox bottomTimerContainer = new HBox();
+        bottomTimerContainer.setAlignment(Pos.CENTER);
+        if (whiteTimerBar != null) {
+            whiteTimerBar.prefWidthProperty().bind(chessBoard.getBoard().widthProperty());
+            bottomTimerContainer.getChildren().add(whiteTimerBar);
+        }
+
+        mainBoardVBox.getChildren().addAll(topTimerContainer, boardWithAnimations, bottomTimerContainer);
+        boardContainer.getChildren().addAll(mainBoardVBox, helpLabel);
+        
         panel.getChildren().add(boardContainer);
 
         return panel;
@@ -218,7 +266,33 @@ public class GameView {
     public BorderPane getRoot() {
         return root;
     }
-
+    
+    /**
+     * Update timer displays
+     */
+    public void updateTimers() {
+        if (blackTimerBar != null) {
+            blackTimerBar.updateTimerDisplay();
+        }
+        if (whiteTimerBar != null) {
+            whiteTimerBar.updateTimerDisplay();
+        }
+    }
+    
+    /**
+     * Get the white timer bar
+     */
+    public TimerBar getWhiteTimerBar() {
+        return whiteTimerBar;
+    }
+    
+    /**
+     * Get the black timer bar
+     */
+    public TimerBar getBlackTimerBar() {
+        return blackTimerBar;
+    }
+    
     // Métodos para actualizar la UI desde el controlador
     public void updateUIFromController() {
         if (gameInstance != null) {

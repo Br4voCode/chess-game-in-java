@@ -4,8 +4,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import chess.game.Game;
-import chess.model.*;
-import chess.model.pieces.*;
+import chess.model.Board;
+import chess.model.Move;
+import chess.model.Piece;
+import chess.model.PieceColor;
+import chess.model.PieceType;
+import chess.model.Position;
+import chess.model.pieces.Bishop;
+import chess.model.pieces.Knight;
+import chess.model.pieces.Queen;
+import chess.model.pieces.Rook;
 import chess.view.ChessBoard;
 import chess.view.PromotionDialog;
 import chess.view.components.StatusBar;
@@ -31,6 +39,7 @@ public class GameController {
         this.selectedPosition = null;
 
         chessBoard.setCurrentBoard(game.getBoard());
+        game.startClock();
         updateUI();
     }
 
@@ -106,7 +115,6 @@ public class GameController {
                 chessBoard.clearHighlights();
                 selectedPosition = null;
             }
-            return;
         }
     }
 
@@ -190,6 +198,7 @@ public class GameController {
                                         (opponentColor == PieceColor.WHITE ? "Black" : "White") +
                                         " wins!";
                                 statusBar.setStatus(moveDescription);
+                                game.stopClock();
                                 isAnimating = false;
                                 return;
                             }
@@ -203,6 +212,13 @@ public class GameController {
                         if (gameView != null) {
                             gameView.addMoveToHistoryWithColor(moveNotation, movedPiece.getColor());
                             gameView.updateUIFromController();
+                            gameView.updateTimers();
+                        }
+                        
+                        // Check if time expired
+                        if (game.getGameClock().hasTimeExpired(game.getTurn())) {
+                            game.stopClock();
+                            statusBar.setStatus(game.getTurn() + " ran out of time! Game Over.");
                         }
 
                         handleAITurn();
@@ -243,6 +259,7 @@ public class GameController {
                                         (opponentColor == PieceColor.WHITE ? "Black" : "White") +
                                         " wins!";
                                 statusBar.setStatus(moveDescription);
+                                game.stopClock();
                                 isAnimating = false;
                                 return;
                             }
@@ -256,6 +273,13 @@ public class GameController {
                         if (gameView != null) {
                             gameView.addMoveToHistoryWithColor(moveNotation, movedPiece.getColor());
                             gameView.updateUIFromController();
+                            gameView.updateTimers();
+                        }
+                        
+                        // Check if time expired
+                        if (game.getGameClock().hasTimeExpired(game.getTurn())) {
+                            game.stopClock();
+                            statusBar.setStatus(game.getTurn() + " ran out of time! Game Over.");
                         }
 
                         handleAITurn();
@@ -353,6 +377,7 @@ public class GameController {
 
     public void resetGame() {
         game.resetForNewGame();
+        game.startClock(); // Start the clock for the new game
         selectedPosition = null;
         isAnimating = false;
         chessBoard.clearHighlights();
@@ -363,6 +388,9 @@ public class GameController {
         }
 
         updateUI();
+        if (gameView != null) {
+            gameView.updateTimers();
+        }
         statusBar.setStatus("New game started. " + game.getTurn() + " to move.");
     }
 
