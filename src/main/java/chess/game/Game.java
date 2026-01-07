@@ -26,17 +26,17 @@ public class Game {
     private java.util.Map<String, Integer> positionHistory = new java.util.HashMap<>();
 
     public Game(Player white, Player black) {
-    this.board = new Board();
-    this.white = white;
-    this.black = black;
-    this.turn = PieceColor.WHITE;
-    this.gameOver = false;
-    this.gameResult = null;
-    this.moveCount = 0;
-    this.stepHistory = new StepHistory();
-    this.stepHistoryStore = new StepHistoryStore("game_history.dat");
-    // 5 minutos para cada jugador
-    this.gameClock = new GameClock(5 * 60);
+        this.board = new Board();
+        this.white = white;
+        this.black = black;
+        this.turn = PieceColor.WHITE;
+        this.gameOver = false;
+        this.gameResult = null;
+        this.moveCount = 0;
+        this.stepHistory = new StepHistory();
+        this.stepHistoryStore = new StepHistoryStore("game_history.dat");
+        // 5 minutos para cada jugador
+        this.gameClock = new GameClock(5 * 60);
     }
 
     public Board getBoard() {
@@ -107,6 +107,27 @@ public class Game {
         chess.model.Position enPassantBefore = board.getEnPassantTarget();
         Piece moverBefore = board.getPieceAt(m.getFrom());
 
+        // --- NUEVO: Capturar estado 'hasMoved' ANTES de mover ---
+        Boolean moverHadMovedBefore = null;
+        if (moverBefore instanceof chess.model.pieces.King) {
+            moverHadMovedBefore = ((chess.model.pieces.King) moverBefore).hasMovedFromStart();
+        } else if (moverBefore instanceof chess.model.pieces.Rook) {
+            moverHadMovedBefore = ((chess.model.pieces.Rook) moverBefore).hasMovedFromStart();
+        }
+
+        Boolean rookHadMovedBefore = null;
+        boolean isCastlingAttempt = moverBefore != null && moverBefore.getType() == chess.model.PieceType.KING &&
+                m.getFrom().getRow() == m.getTo().getRow() &&
+                Math.abs(m.getFrom().getCol() - m.getTo().getCol()) == 2;
+        if (isCastlingAttempt) {
+            int row = m.getFrom().getRow();
+            int rookCol = (m.getTo().getCol() > m.getFrom().getCol()) ? 7 : 0;
+            Piece rook = board.getPieceAt(new chess.model.Position(row, rookCol));
+            if (rook instanceof chess.model.pieces.Rook) {
+                rookHadMovedBefore = ((chess.model.pieces.Rook) rook).hasMovedFromStart();
+            }
+        }
+
         lastCapturedPiece = board.movePiece(m);
 
         chess.model.Position enPassantAfter = board.getEnPassantTarget();
@@ -119,9 +140,10 @@ public class Game {
         gameClock.switchPlayer();
 
         if (shouldSaveMoves) {
-            Step step = buildStepForAppliedMove(m, moverBefore, lastCapturedPiece, enPassantBefore, enPassantAfter);
+            Step step = buildStepForAppliedMove(m, moverBefore, lastCapturedPiece, enPassantBefore, enPassantAfter,
+                    moverHadMovedBefore, rookHadMovedBefore);
             stepHistory.recordApplied(step);
-            
+
             // Update metadata with current timer state before saving
             if (stepHistoryStore.getGameMetadata() != null) {
                 chess.history.GameMetadata.GameMode mode = stepHistoryStore.getGameMetadata().getGameMode();
@@ -129,7 +151,7 @@ public class Game {
                 long blackTime = gameClock.getBlackTimeRemainingMillis();
                 stepHistoryStore.setGameMetadata(new chess.history.GameMetadata(mode, whiteTime, blackTime));
             }
-            
+
             stepHistoryStore.saveApplied(stepHistory);
         }
 
@@ -142,7 +164,9 @@ public class Game {
             Piece moverBefore,
             Piece capturedPiece,
             chess.model.Position enPassantBefore,
-            chess.model.Position enPassantAfter) {
+            chess.model.Position enPassantAfter,
+            Boolean moverHadMovedBefore,
+            Boolean rookHadMovedBefore) {
         Piece moverAfter = board.getPieceAt(move.getTo());
         PieceColor moverColor = moverAfter != null ? moverAfter.getColor() : turn.opposite();
         chess.model.PieceType moverType = moverAfter != null ? moverAfter.getType() : null;
@@ -155,7 +179,6 @@ public class Game {
 
         chess.model.Position rookFrom = null;
         chess.model.Position rookTo = null;
-        Boolean rookHadMovedBefore = null;
         if (castling) {
             int row = move.getFrom().getRow();
             if (move.getTo().getCol() > move.getFrom().getCol()) {
@@ -164,11 +187,6 @@ public class Game {
             } else {
                 rookFrom = new chess.model.Position(row, 0);
                 rookTo = new chess.model.Position(row, 3);
-            }
-            Piece rookBefore = board.getPieceAt(rookTo);
-            if (rookBefore instanceof chess.model.pieces.Rook) {
-
-                rookHadMovedBefore = ((chess.model.pieces.Rook) rookBefore).hasMovedFromStart();
             }
         }
 
@@ -187,13 +205,6 @@ public class Game {
 
         Piece promotedTo = promotion ? moverAfter : null;
         Piece originalPawn = promotion ? moverBefore : null;
-
-        Boolean moverHadMovedBefore = null;
-        if (moverBefore instanceof chess.model.pieces.King) {
-            moverHadMovedBefore = ((chess.model.pieces.King) moverBefore).hasMovedFromStart();
-        } else if (moverBefore instanceof chess.model.pieces.Rook) {
-            moverHadMovedBefore = ((chess.model.pieces.Rook) moverBefore).hasMovedFromStart();
-        }
 
         return new Step(
                 move,
@@ -491,7 +502,8 @@ public class Game {
     }
 
     /**
-     * Check if the current position has occurred three times (threefold repetition).
+     * Check if the current position has occurred three times (threefold
+     * repetition).
      */
     public boolean hasThreefoldRepetition() {
         String currentPosition = generatePositionKey();
