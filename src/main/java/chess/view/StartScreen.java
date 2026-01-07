@@ -11,21 +11,29 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 
 /**
- * Pantalla de inicio que permite al usuario elegir entre:
- * - Iniciar una nueva partida
- * - Cargar la última partida guardada
+ * شاشة البداية التي تسمح للمستخدم بالاختيار بين:
+ * - بدء لعبة جديدة
+ * - تحميل آخر لعبة محفوظة
+ * - لعبة بين لاعبين
+ * - لعبة ذكاء اصطناعي مقابل ذكاء اصطناعي
  */
 public class StartScreen {
     private BorderPane root;
     private Runnable onNewGame;
     private Runnable onLoadGame;
     private Runnable onNewTwoPlayerGame;
+    private Runnable onNewAIVsAIGame;
     private static final String HISTORY_FILE = "game_history.dat";
 
     public StartScreen(Runnable onNewGame, Runnable onLoadGame, Runnable onNewTwoPlayerGame) {
+        this(onNewGame, onLoadGame, onNewTwoPlayerGame, null);
+    }
+
+    public StartScreen(Runnable onNewGame, Runnable onLoadGame, Runnable onNewTwoPlayerGame, Runnable onNewAIVsAIGame) {
         this.onNewGame = onNewGame;
         this.onLoadGame = onLoadGame;
         this.onNewTwoPlayerGame = onNewTwoPlayerGame;
+        this.onNewAIVsAIGame = onNewAIVsAIGame;
         initializeComponents();
     }
 
@@ -33,7 +41,7 @@ public class StartScreen {
         root = new BorderPane();
         root.setStyle("-fx-background-color: #2b2b2b;");
 
-        // Panel central con opciones
+        // لوحة مركزية بخيارات اللعبة
         VBox mainPanel = createMainPanel();
         root.setCenter(mainPanel);
     }
@@ -77,6 +85,23 @@ public class StartScreen {
         );
         newTwoPlayerGameButton.setMinWidth(250);
         newTwoPlayerGameButton.setOnAction(e -> onNewTwoPlayerGame.run());
+
+        // Botón IA vs IA
+        Button aiVsAIButton = new Button("AI vs AI");
+        aiVsAIButton.setStyle(
+                "-fx-font-size: 18px; " +
+                "-fx-padding: 15px 50px; " +
+                "-fx-background-color: #9c27b0; " +
+                "-fx-text-fill: white; " +
+                "-fx-font-weight: bold; " +
+                "-fx-cursor: hand;"
+        );
+        aiVsAIButton.setMinWidth(250);
+        if (onNewAIVsAIGame != null) {
+            aiVsAIButton.setOnAction(e -> onNewAIVsAIGame.run());
+        } else {
+            aiVsAIButton.setDisable(true);
+        }
 
         // Botón Cargar Partida (deshabilitado si no existe archivo)
         Button loadGameButton = new Button("Load Last Game");
@@ -127,6 +152,7 @@ public class StartScreen {
                 subtitleLabel,
                 newGameButton,
                 newTwoPlayerGameButton,
+                aiVsAIButton,
                 loadGameButton,
                 infoLabel
         );

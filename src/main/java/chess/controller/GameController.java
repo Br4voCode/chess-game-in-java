@@ -21,7 +21,7 @@ import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
 /**
- * Controlador que maneja la lógica de interacción entre la vista y el modelo
+ * متحكم يدير منطق التفاعل بين الواجهة والنموذج
  */
 public class GameController {
     private Game game;
@@ -31,18 +31,24 @@ public class GameController {
     private Position selectedPosition;
     private boolean isAnimating = false;
     private boolean isTwoPlayerMode = false;
+    private boolean isAIVsAIMode = false;
 
     public GameController(Game game, ChessBoard chessBoard, StatusBar statusBar) {
-        this(game, chessBoard, statusBar, false);
+        this(game, chessBoard, statusBar, false, false);
     }
 
     public GameController(Game game, ChessBoard chessBoard, StatusBar statusBar, boolean isTwoPlayerMode) {
+        this(game, chessBoard, statusBar, isTwoPlayerMode, false);
+    }
+
+    public GameController(Game game, ChessBoard chessBoard, StatusBar statusBar, boolean isTwoPlayerMode, boolean isAIVsAIMode) {
         this.game = game;
         this.chessBoard = chessBoard;
         this.statusBar = statusBar;
         this.gameView = null;
         this.selectedPosition = null;
         this.isTwoPlayerMode = isTwoPlayerMode;
+        this.isAIVsAIMode = isAIVsAIMode;
 
         chessBoard.setCurrentBoard(game.getBoard());
         game.startClock();
@@ -163,7 +169,7 @@ public class GameController {
         }
     }
 
-    private void executeMoveWithAnimation(Move move) {
+    public void executeMoveWithAnimation(Move move) {
         isAnimating = true;
         Position from = move.getFrom();
         Position to = move.getTo();
@@ -349,12 +355,13 @@ public class GameController {
     }
 
     private void handleAITurn() {
-        // Skip AI logic in two-player mode
-        if (isTwoPlayerMode) {
+        // تخطي منطق الذكاء الاصطناعي في وضع لاعبين واثنين والذكاء الاصطناعي مقابل الذكاء الاصطناعي
+        if (isTwoPlayerMode || isAIVsAIMode) {
             return;
         }
         
-        Move aiMove = game.getAIMoveIfAny();
+        // احصل على أفضل حركة من الذكاء الاصطناعي
+        Move aiMove = game.getBestMove();
         if (aiMove != null) {
             new Thread(() -> {
                 try {
@@ -491,5 +498,9 @@ public class GameController {
             default:
                 return new Queen(color); // Fallback to queen
         }
+    }
+
+    public boolean isAIVsAIMode() {
+        return isAIVsAIMode;
     }
 }
