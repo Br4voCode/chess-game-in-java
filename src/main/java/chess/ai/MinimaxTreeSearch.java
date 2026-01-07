@@ -4,6 +4,7 @@ import chess.model.Board;
 import chess.model.PieceColor;
 import chess.model.Move;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,17 +33,21 @@ public class MinimaxTreeSearch {
         GameTreeNode root = tree.getRoot();
         propagate(root);
         // choose best child
+        List<GameTreeNode> bestNodes = new ArrayList<>();
         int best = Integer.MIN_VALUE;
-        GameTreeNode bestNode = null;
         for (GameTreeNode child : root.getChildren()) {
             Integer s = child.getEvaluation();
-            if (s == null) continue;
+            if (s == null)
+                continue;
             if (s > best) {
                 best = s;
-                bestNode = child;
+                bestNodes.clear();
+                bestNodes.add(child);
+            } else if (s == best) {
+                bestNodes.add(child);
             }
         }
-        return bestNode == null ? null : bestNode.getMoveFromParent();
+        return bestNodes.isEmpty() ? null : bestNodes.get((int) (Math.random() * bestNodes.size())).getMoveFromParent();
     }
 
     private int propagate(GameTreeNode node) {
@@ -56,8 +61,10 @@ public class MinimaxTreeSearch {
         int best = nodeMax ? Integer.MIN_VALUE : Integer.MAX_VALUE;
         for (GameTreeNode c : children) {
             int val = propagate(c);
-            if (nodeMax) best = Math.max(best, val);
-            else best = Math.min(best, val);
+            if (nodeMax)
+                best = Math.max(best, val);
+            else
+                best = Math.min(best, val);
         }
         node.setEvaluation(best);
         return best;
