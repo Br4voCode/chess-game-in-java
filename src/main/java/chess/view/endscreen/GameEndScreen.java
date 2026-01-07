@@ -143,16 +143,6 @@ public final class GameEndScreen {
 		Region spacer = new Region();
 		VBox.setVgrow(spacer, Priority.ALWAYS);
 
-		Button accept = new Button("Aceptar");
-		accept.setDefaultButton(true);
-		accept.setOnAction(e -> close());
-		accept.setStyle(
-				"-fx-background-radius: 12;" +
-						"-fx-padding: 10 18;" +
-						"-fx-font-size: 14;" +
-						"-fx-font-weight: bold;" +
-						"-fx-text-fill: white;" +
-						"-fx-background-color: " + toRgbaCss(visual.accent.deriveColor(0, 1, 1, 0.95)) + ";");
 
 		Button backToMenu = new Button("Back to Menu");
 		backToMenu.setOnAction(e -> {
@@ -169,7 +159,7 @@ public final class GameEndScreen {
 						"-fx-text-fill: white;" +
 						"-fx-background-color: rgba(244, 67, 54, 0.95);");
 
-		HBox footer = new HBox(12, accept, backToMenu);
+	       HBox footer = new HBox(12, backToMenu);
 		footer.setAlignment(Pos.CENTER);
 
 		Region accentBar = new Region();

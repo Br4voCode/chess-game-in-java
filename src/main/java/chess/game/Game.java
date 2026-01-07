@@ -26,16 +26,17 @@ public class Game {
     private java.util.Map<String, Integer> positionHistory = new java.util.HashMap<>();
 
     public Game(Player white, Player black) {
-        this.board = new Board();
-        this.white = white;
-        this.black = black;
-        this.turn = PieceColor.WHITE;
-        this.gameOver = false;
-        this.gameResult = null;
-        this.moveCount = 0;
-        this.stepHistory = new StepHistory();
-        this.stepHistoryStore = new StepHistoryStore("game_history.dat");
-        this.gameClock = new GameClock();
+    this.board = new Board();
+    this.white = white;
+    this.black = black;
+    this.turn = PieceColor.WHITE;
+    this.gameOver = false;
+    this.gameResult = null;
+    this.moveCount = 0;
+    this.stepHistory = new StepHistory();
+    this.stepHistoryStore = new StepHistoryStore("game_history.dat");
+    // 5 minutos para cada jugador
+    this.gameClock = new GameClock(5 * 60);
     }
 
     public Board getBoard() {

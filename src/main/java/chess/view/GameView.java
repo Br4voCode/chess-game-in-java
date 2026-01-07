@@ -23,6 +23,14 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 public class GameView {
+    /**
+     * Llama al callback de volver al menú si está definido (para uso externo).
+     */
+    public void triggerBackToMenu() {
+        if (onBackToMenu != null) {
+            onBackToMenu.run();
+        }
+    }
     private BorderPane root;
     private ChessBoard chessBoard;
     private StatusBar statusBar;

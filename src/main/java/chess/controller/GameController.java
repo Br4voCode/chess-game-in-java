@@ -1,3 +1,4 @@
+
 package chess.controller;
 
 import java.util.List;
@@ -30,6 +31,38 @@ import javafx.util.Duration;
  * متحكم يدير منطق التفاعل بين الواجهة والنموذج
  */
 public class GameController {
+    // --- NUEVO: Verificación periódica de tiempo agotado ---
+    private javafx.animation.Timeline timeoutChecker;
+    // Eliminar cualquier bandera de control de EndScreen para timeout (no se necesita)
+
+    private void startTimeoutChecker() {
+        if (timeoutChecker != null) {
+            timeoutChecker.stop();
+        }
+        timeoutChecker = new javafx.animation.Timeline(
+            new javafx.animation.KeyFrame(javafx.util.Duration.millis(200), e -> checkTimeoutAndShowEndScreen())
+        );
+        timeoutChecker.setCycleCount(javafx.animation.Animation.INDEFINITE);
+        timeoutChecker.play();
+    }
+
+    private void stopTimeoutChecker() {
+        if (timeoutChecker != null) {
+            timeoutChecker.stop();
+        }
+    }
+
+    private void checkTimeoutAndShowEndScreen() {
+        if (game != null && !game.isGameOver() && game.getGameClock().hasTimeExpired(game.getTurn())) {
+            game.stopClock();
+            statusBar.setStatus(game.getTurn() + " ran out of time! Game Over.");
+            showEndScreenIfNeeded(new chess.rules.MoveResult(
+                false, null, game.getTurn(), null, false, false, false, false, false, true,
+                game.getTurn() + " ran out of time! Game Over."));
+            isHistoryNavigationLocked = true;
+            updateHistoryNavigationButtons();
+        }
+    }
     private Game game;
     private ChessBoard chessBoard;
     private StatusBar statusBar;
@@ -51,23 +84,26 @@ public class GameController {
 
     public GameController(Game game, ChessBoard chessBoard, StatusBar statusBar, boolean isTwoPlayerMode,
             boolean isAIVsAIMode) {
-        this.game = game;
-        this.chessBoard = chessBoard;
-        this.statusBar = statusBar;
-        this.gameView = null;
-        this.selectedPosition = null;
-        this.isTwoPlayerMode = isTwoPlayerMode;
-        this.isAIVsAIMode = isAIVsAIMode;
+    this.game = game;
+    this.chessBoard = chessBoard;
+    this.statusBar = statusBar;
+    this.gameView = null;
+    this.selectedPosition = null;
+    this.isTwoPlayerMode = isTwoPlayerMode;
+    this.isAIVsAIMode = isAIVsAIMode;
+    // Reiniciar el checker de timeout siempre que se inicializa el tablero
+    startTimeoutChecker();
 
-        chessBoard.setCurrentBoard(game.getBoard());
-        game.startClock();
-        updateUI();
+    chessBoard.setCurrentBoard(game.getBoard());
+    game.startClock();
+    updateUI();
     }
 
     public void setGameView(chess.view.GameView gameView) {
         this.gameView = gameView;
         updateUI();
-
+        // Reiniciar verificación de timeout cada vez que se asocia la vista
+        startTimeoutChecker();
         if (game != null && !game.isGameOver()) {
             isHistoryNavigationLocked = false;
         }
@@ -515,6 +551,13 @@ public class GameController {
     }
 
     public void executeMoveWithAnimation(Move move) {
+        if (game.isGameOver()) {
+            // Si el juego terminó (por tiempo u otra razón), no permitir más animaciones ni movimientos
+            showEndScreenIfNeeded(new chess.rules.MoveResult(
+                false, move, game.getTurn(), null, false, false, false, false, false, true,
+                game.getTurn() + " ran out of time! Game Over."));
+            return;
+        }
         isAnimating = true;
         Position from = move.getFrom();
         Position to = move.getTo();
@@ -532,10 +575,27 @@ public class GameController {
 
         PauseTransition initialPause = new PauseTransition(Duration.millis(50));
         initialPause.setOnFinished(e -> {
+            if (game.isGameOver()) {
+                // Si el juego terminó durante la animación, restaurar el tablero y mostrar EndScreen
+                updateBoardState(); // restaura visualmente el tablero
+                isAnimating = false;
+                showEndScreenIfNeeded(new chess.rules.MoveResult(
+                    false, move, game.getTurn(), null, false, false, false, false, false, true,
+                    game.getTurn() + " ran out of time! Game Over."));
+                return;
+            }
             boolean isCastling = isCastlingMove(move, movedPiece);
 
             if (isCastling) {
                 animateCastling(move, () -> {
+                    if (game.isGameOver()) {
+                        updateBoardState();
+                        isAnimating = false;
+                        showEndScreenIfNeeded(new chess.rules.MoveResult(
+                            false, move, game.getTurn(), null, false, false, false, false, false, true,
+                            game.getTurn() + " ran out of time! Game Over."));
+                        return;
+                    }
                     MoveResult result = RulesEngine.applyMove(game, move);
                     boolean moveSuccessful = result.isMoveApplied();
 
@@ -578,8 +638,16 @@ public class GameController {
                         }
 
                         if (game.getGameClock().hasTimeExpired(game.getTurn())) {
+                            // Si se acabó el tiempo después del movimiento, congelar UI y mostrar pantalla de fin
                             game.stopClock();
                             statusBar.setStatus(game.getTurn() + " ran out of time! Game Over.");
+                            showEndScreenIfNeeded(new chess.rules.MoveResult(
+                                false, move, game.getTurn(), null, false, false, false, false, false, true,
+                                game.getTurn() + " ran out of time! Game Over."));
+                            isHistoryNavigationLocked = true;
+                            updateHistoryNavigationButtons();
+                            isAnimating = false;
+                            return;
                         }
 
                         handleAITurn();
@@ -592,6 +660,14 @@ public class GameController {
                 });
             } else {
                 chessBoard.animateMove(move, () -> {
+                    if (game.isGameOver()) {
+                        updateBoardState();
+                        isAnimating = false;
+                        showEndScreenIfNeeded(new chess.rules.MoveResult(
+                            false, move, game.getTurn(), null, false, false, false, false, false, true,
+                            game.getTurn() + " ran out of time! Game Over."));
+                        return;
+                    }
                     MoveResult result = RulesEngine.applyMove(game, move);
                     boolean moveSuccessful = result.isMoveApplied();
                     boolean isCheckMove = false;
@@ -651,8 +727,16 @@ public class GameController {
                         }
 
                         if (game.getGameClock().hasTimeExpired(game.getTurn())) {
+                            // Si se acabó el tiempo después del movimiento, congelar UI y mostrar pantalla de fin
                             game.stopClock();
                             statusBar.setStatus(game.getTurn() + " ran out of time! Game Over.");
+                            showEndScreenIfNeeded(new chess.rules.MoveResult(
+                                false, move, game.getTurn(), null, false, false, false, false, false, true,
+                                game.getTurn() + " ran out of time! Game Over."));
+                            isHistoryNavigationLocked = true;
+                            updateHistoryNavigationButtons();
+                            isAnimating = false;
+                            return;
                         }
 
                         handleAITurn();
@@ -685,10 +769,11 @@ public class GameController {
     }
 
     private void showEndScreenIfNeeded(MoveResult result) {
-
         if (gameView == null || gameView.getRoot() == null || gameView.getRoot().getScene() == null) {
             return;
         }
+        // Siempre detener el checker al mostrar EndScreen, pero se reiniciará al reiniciar el tablero
+        stopTimeoutChecker(); // Detener verificación periódica al mostrar EndScreen
 
         PieceColor winnerColor = result.getNextTurn().opposite();
 
@@ -700,7 +785,7 @@ public class GameController {
             // Determinar modo de juego
             boolean isPvP = isTwoPlayerMode;
             boolean isAIVsAI = isAIVsAIMode;
-            boolean isPvAI = !isPvP && !isAIVsAI;
+            // boolean isPvAI = !isPvP && !isAIVsAI; // Removed unused variable
 
             // El jugador que NO se quedó sin tiempo es el ganador
             // result.getNextTurn() es el que perdió por tiempo
@@ -735,16 +820,22 @@ public class GameController {
 
         javafx.stage.Stage owner = (javafx.stage.Stage) gameView.getRoot().getScene().getWindow();
 
-        // Create end screen with back to menu callback that delegates to GameView
-        GameEndScreen endScreen = new GameEndScreen(owner, screenResult, gameResultMessage);
-        endScreen.setOnBackToMenu(() -> {
-            javafx.application.Platform.runLater(() -> {
-                if (gameView != null) {
-                    gameView.handleBackToMenu();
-                }
+        // Forzar la apertura de la EndScreen en el hilo de JavaFX
+        javafx.application.Platform.runLater(() -> {
+            GameEndScreen endScreen = new GameEndScreen(owner, screenResult, gameResultMessage);
+            endScreen.setOnBackToMenu(() -> {
+                javafx.application.Platform.runLater(() -> {
+                    if (gameView != null) {
+                        gameView.handleBackToMenu();
+                        // Inicia una nueva partida automáticamente tras volver al menú
+                        // Si quieres un retardo, puedes agregar un PauseTransition aquí
+                        // gameView.triggerBackToMenu(); // Solo si necesitas forzar el menú
+                        // Por defecto, handleBackToMenu() ya gestiona el flujo
+                    }
+                });
             });
+            endScreen.show();
         });
-        endScreen.show();
     }
 
     private void animateCastling(Move kingMove, Runnable onFinished) {
