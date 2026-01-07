@@ -16,6 +16,7 @@ public class Game {
     private int moveCount;
     private MoveHistory moveHistory;
     private boolean shouldSaveMoves = true; // Flag para controlar si guardar movimientos
+    private Piece lastCapturedPiece = null; // Track the last captured piece
 
     public Game(Player white, Player black) {
         this.board = new Board();
@@ -65,8 +66,8 @@ public class Game {
             return false;
         }
         
-        // Apply the move
-        board.movePiece(m);
+        // Apply the move and track captured piece
+        lastCapturedPiece = board.movePiece(m);
         turn = turn.opposite();
         moveCount++;
         
@@ -245,5 +246,20 @@ public class Game {
      */
     public void setShouldSaveMoves(boolean shouldSave) {
         this.shouldSaveMoves = shouldSave;
+    }
+
+    /**
+     * Obtiene la última pieza capturada
+     * @return la última pieza capturada, o null si no hubo captura
+     */
+    public Piece getLastCapturedPiece() {
+        return lastCapturedPiece;
+    }
+
+    /**
+     * Limpia la última pieza capturada
+     */
+    public void clearLastCapturedPiece() {
+        lastCapturedPiece = null;
     }
 }

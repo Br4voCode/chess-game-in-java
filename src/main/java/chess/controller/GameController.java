@@ -210,6 +210,15 @@ public class GameController {
                     boolean moveSuccessful = game.applyMove(move);
                     
                     if (moveSuccessful) {
+                        // Check if a piece was captured and update UI
+                        Piece capturedPiece = game.getLastCapturedPiece();
+                        if (capturedPiece != null && gameView != null) {
+                            String pieceSymbol = capturedPiece.toUnicode();
+                            boolean isWhitePiece = capturedPiece.getColor() == PieceColor.WHITE;
+                            gameView.addCapturedPiece(pieceSymbol, isWhitePiece);
+                            game.clearLastCapturedPiece();
+                        }
+                        
                         chessBoard.updateSingleSquare(from);
                         chessBoard.updateSingleSquare(to);
                         
@@ -334,6 +343,12 @@ public class GameController {
         selectedPosition = null;
         isAnimating = false;
         chessBoard.clearHighlights();
+        
+        // Clear captured pieces UI
+        if (gameView != null) {
+            gameView.clearCapturedPieces();
+        }
+        
         updateUI();
         statusBar.setStatus("New game started. " + game.getTurn() + " to move.");
     }

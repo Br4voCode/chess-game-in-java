@@ -245,8 +245,17 @@ public class GameView {
         if (targetBox != null) {
             Label pieceLabel = new Label(pieceSymbol);
             pieceLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: " + 
-                              (isWhitePiece ? "white" : "#2b2b2b") + ";");
+                              (isWhitePiece ? "white" : "#bbbbbb") + ";");
             targetBox.getChildren().add(pieceLabel);
+        }
+    }
+    
+    public void clearCapturedPieces() {
+        if (whiteCapturedBox != null) {
+            whiteCapturedBox.getChildren().clear();
+        }
+        if (blackCapturedBox != null) {
+            blackCapturedBox.getChildren().clear();
         }
     }
     

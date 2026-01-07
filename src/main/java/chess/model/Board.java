@@ -61,16 +61,20 @@ public class Board {
 
     /**
      * Apply move to this board (mutates). Handles pawn promotion to queen by default and castling.
+     * Returns the captured piece if any, null otherwise.
      */
-    public void movePiece(Move move) {
+    public Piece movePiece(Move move) {
         Position from = move.getFrom();
         Position to = move.getTo();
         Piece p = getPieceAt(from);
-        if (p == null) return;
+        if (p == null) return null;
         
         lastMove = move;
         lastMoveFrom = from;
         lastMoveTo = to;
+        
+        // Capture the piece at the destination (if any)
+        Piece capturedPiece = getPieceAt(to);
         
         if (p.getType() == PieceType.KING) {
             if (from.getRow() == to.getRow() && Math.abs(from.getCol() - to.getCol()) == 2) {
@@ -100,6 +104,8 @@ public class Board {
                 }
             }
         }
+        
+        return capturedPiece;
     }
 
     private void handleCastling(Position kingFrom, Position kingTo, PieceColor color) {
