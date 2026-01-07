@@ -225,6 +225,29 @@ public class GameClock implements Serializable {
         return formatTime(timeRemainingSeconds);
     }
 
+    /**
+     * Get white player's remaining time in milliseconds (for saving)
+     */
+    public long getWhiteTimeRemainingMillis() {
+        return getTimeRemainingMillis(PieceColor.WHITE);
+    }
+
+    /**
+     * Get black player's remaining time in milliseconds (for saving)
+     */
+    public long getBlackTimeRemainingMillis() {
+        return getTimeRemainingMillis(PieceColor.BLACK);
+    }
+
+    /**
+     * Set time remaining for both players (for loading saved games)
+     */
+    public void setTimeRemaining(long whiteMillis, long blackMillis) {
+        this.whiteTimeRemainingMillis = whiteMillis;
+        this.blackTimeRemainingMillis = blackMillis;
+        this.lastUpdateTimeMillis = System.currentTimeMillis();
+    }
+
     @Override
     public String toString() {
         return String.format("GameClock{white=%s, black=%s, active=%s}",

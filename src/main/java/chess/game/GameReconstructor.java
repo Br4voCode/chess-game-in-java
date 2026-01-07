@@ -68,6 +68,13 @@ public class GameReconstructor {
 
         game.setTurn((movesApplied % 2 == 0) ? chess.model.PieceColor.WHITE : chess.model.PieceColor.BLACK);
 
+        // Restore timer state from metadata if available
+        chess.history.GameMetadata metadata = store.getGameMetadata();
+        if (metadata != null && (metadata.getWhiteTimeMillis() > 0 || metadata.getBlackTimeMillis() > 0)) {
+            game.getGameClock().setTimeRemaining(metadata.getWhiteTimeMillis(), metadata.getBlackTimeMillis());
+            game.getGameClock().setActivePlayer(game.getTurn());
+        }
+
         game.setShouldSaveMoves(true);
 
         if (DEBUG) {
