@@ -437,25 +437,12 @@ public class ChessBoard {
 			// Remover la pieza temporal
 			boardContainer.getChildren().remove(movingPiece);
 
-			// Mostrar la pieza en la casilla de destino
-			toSquare.updateAppearance(pieceSymbol, false, false, false);
-
-			// Efecto de aterrizaje suave
-			javafx.animation.ScaleTransition landingEffect = new javafx.animation.ScaleTransition(Duration.millis(150),
-					toSquare.isUsingImages() ? toSquare.getPieceImageView() : toSquare.getPieceLabel());
-			landingEffect.setFromX(1.2);
-			landingEffect.setFromY(1.2);
-			landingEffect.setToX(1.0);
-			landingEffect.setToY(1.0);
-			landingEffect.setInterpolator(javafx.animation.Interpolator.EASE_OUT);
-
-			landingEffect.setOnFinished(landingEvent -> {
-				if (onFinished != null) {
-					onFinished.run();
-				}
-			});
-
-			landingEffect.play();
+			// Importante: NO pintar la pieza aquí.
+			// El controlador vuelve a repintar 'from' y 'to' después de applyMove();
+			// si pintamos aquí también, se producen flashes/parpadeos por doble actualización.
+			if (onFinished != null) {
+				onFinished.run();
+			}
 		});
 
 		moveAnimation.play();
@@ -556,14 +543,16 @@ public class ChessBoard {
 		// Ejecutar efectos en paralelo
 		ParallelTransition captureEffect = new ParallelTransition(explode, rotate, fadeOut, shake);
 		captureEffect.setOnFinished(e -> {
-			// Limpiar la pieza capturada
-			targetSquare.updateAppearance("", false, false, false);
-
-			// Restaurar estado normal
+			// Restaurar estado normal del nodo ANTES de limpiar la casilla.
+			// Si limpiamos primero, updateAppearance puede ocultar/cambiar el nodo y causar parpadeo.
 			pieceNode.setScaleX(1.0);
 			pieceNode.setScaleY(1.0);
 			pieceNode.setRotate(0);
 			pieceNode.setOpacity(1.0);
+
+			// Limpiar la pieza capturada
+			targetSquare.updateAppearance("", false, false, false);
+
 			targetSquare.getRoot().setTranslateX(0);
 			targetSquare.getRoot().setTranslateY(0);
 

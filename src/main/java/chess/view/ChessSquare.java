@@ -190,8 +190,8 @@ public class ChessSquare {
 		handlePossibleMoves(isPossibleMove, isCaptureMove);
 
 		// Solo restaurar color base si NO está seleccionada y NO es movimiento posible
-		// y NO tiene ningún highlight activo
-		if (!isSelected && !isPossibleMove && !isSelected) {
+		// (incluyendo capturas). Si hay highlight activo, no resetear el fondo.
+		if (!isSelected && !isPossibleMove && !isCaptureMove) {
 			updateBaseColor();
 		}
 	}
