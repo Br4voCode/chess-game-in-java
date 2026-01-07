@@ -161,6 +161,25 @@ public class ChessBoard {
 		}
 	}
 
+	public void highlightHint(Move move) {
+		if (move == null)
+			return;
+
+		// Limpiar otros highlights primero
+		clearHighlightsImmediately();
+
+		// Resaltar casilla de origen y destino como pista
+		ChessSquare fromSquare = getSquare(move.getFrom());
+		ChessSquare toSquare = getSquare(move.getTo());
+
+		if (fromSquare != null) {
+			fromSquare.highlightAsHint();
+		}
+		if (toSquare != null) {
+			toSquare.highlightAsHint();
+		}
+	}
+
 	public void highlightPossibleMoves(Position from, List<Move> possibleMoves) {
 		// Limpiar TODOS los highlights primero de forma síncrona
 		clearHighlightsImmediately();
