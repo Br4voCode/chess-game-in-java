@@ -3,6 +3,7 @@ package chess.controller;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import chess.game.AIPlayer;
 import chess.game.Game;
 import chess.model.Board;
 import chess.model.Move;
@@ -510,6 +511,17 @@ public class GameController {
     public void hintButton() {
         if (isAnimating)
             return;
+
+        // Verificar si el jugador actual es IA
+        PieceColor currentTurn = game.getTurn();
+        chess.game.Player currentPlayer = (currentTurn == PieceColor.WHITE)
+                ? game.getWhitePlayer()
+                : game.getBlackPlayer();
+
+        if (currentPlayer instanceof AIPlayer) {
+            statusBar.setStatus("Las pistas no están disponibles durante el turno de la IA.");
+            return;
+        }
 
         statusBar.setStatus("Calculando pista...");
 
