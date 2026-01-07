@@ -61,7 +61,6 @@ public final class GameEndScreen {
 		this.card.setMaxWidth(DEFAULT_WIDTH);
 		this.card.setEffect(new DropShadow(30, Color.rgb(0, 0, 0, 0.55)));
 
-		// “Tarjeta” con borde suave. Fondo lo ajustamos según el resultado.
 		this.card.setStyle(
 				"-fx-background-radius: 18;" +
 						"-fx-border-radius: 18;" +
@@ -73,7 +72,6 @@ public final class GameEndScreen {
 		this.root.setPadding(new Insets(18));
 		this.root.getChildren().add(card);
 
-		// Fondo “oscurecido” tipo modal.
 		this.root.setStyle("-fx-background-color: rgba(0,0,0,0.55);");
 
 		Scene scene = new Scene(root, DEFAULT_WIDTH, DEFAULT_HEIGHT);
@@ -82,7 +80,6 @@ public final class GameEndScreen {
 
 		applyVariant(result);
 
-		// Cerrar con ESC.
 		scene.setOnKeyPressed(e -> {
 			switch (e.getCode()) {
 				case ESCAPE -> close();
@@ -110,7 +107,6 @@ public final class GameEndScreen {
 
 		VariantVisual visual = VariantVisual.from(result);
 
-		// Icono grande (emoji / símbolo). Si luego quieren reemplazar por imagen, es aquí.
 		Label icon = new Label(visual.icon);
 		icon.setTextFill(visual.accent);
 		icon.setFont(Font.font("System", FontWeight.EXTRA_BOLD, 72));
@@ -144,7 +140,6 @@ public final class GameEndScreen {
 		HBox footer = new HBox(accept);
 		footer.setAlignment(Pos.CENTER);
 
-		// Barra superior con “acento”
 		Region accentBar = new Region();
 		accentBar.setPrefHeight(6);
 		accentBar.setMaxWidth(Double.MAX_VALUE);
@@ -154,14 +149,12 @@ public final class GameEndScreen {
 
 		card.getChildren().addAll(accentBar, icon, title, subtitle, spacer, footer);
 
-		// Confeti solo en WIN
 		root.getChildren().remove(confeti);
 		if (result == Result.WIN) {
 			if (!root.getChildren().contains(confeti)) {
 				root.getChildren().add(0, confeti);
 			}
 
-			// Asegurar que cubra toda la escena
 			confeti.prefWidthProperty().bind(root.widthProperty());
 			confeti.prefHeightProperty().bind(root.heightProperty());
 			confeti.start();
@@ -184,17 +177,17 @@ public final class GameEndScreen {
 						"¡Victoria!",
 						"Buen juego. El rey está a salvo… y la celebración empieza.",
 						"♔",
-						Color.web("#2ecc71")); // verde
+						Color.web("#2ecc71"));
 				case LOSE -> new VariantVisual(
 						"Derrota",
 						"Esta vez no pudo ser. Respira, aprende y vuelve a intentarlo.",
 						"♚",
-						Color.web("#e74c3c")); // rojo
+						Color.web("#e74c3c"));
 				case DRAW -> new VariantVisual(
 						"Empate",
 						"Nadie cede terreno. Una batalla equilibrada.",
 						"≋",
-						Color.web("#3498db")); // azul
+						Color.web("#3498db"));
 			};
 		}
 	}

@@ -32,7 +32,7 @@ public class MinimaxTreeSearch {
     public Move runAndGetBestMove() {
         GameTreeNode root = tree.getRoot();
         propagate(root);
-        // choose best child
+
         List<GameTreeNode> bestNodes = new ArrayList<>();
         int best = Integer.MIN_VALUE;
         for (GameTreeNode child : root.getChildren()) {

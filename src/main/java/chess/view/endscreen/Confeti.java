@@ -34,7 +34,6 @@ public final class Confeti extends Pane {
 		setPickOnBounds(false);
 		setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
-		// Cuando el panel tenga tamaño, generamos confeti.
 		widthProperty().addListener((obs, oldV, newV) -> ensurePieces());
 		heightProperty().addListener((obs, oldV, newV) -> ensurePieces());
 	}
@@ -107,7 +106,7 @@ public final class Confeti extends Pane {
 
 		ThreadLocalRandom r = ThreadLocalRandom.current();
 		for (Piece p : pieces) {
-			// Física básica
+
 			p.vy += GRAVITY_PX_PER_SEC * dtSeconds;
 			p.vx *= DRAG;
 			p.vy *= DRAG;
@@ -116,10 +115,8 @@ public final class Confeti extends Pane {
 			double y = p.node.getTranslateY() + p.vy * dtSeconds;
 			double rot = p.node.getRotate() + p.vr * dtSeconds;
 
-			// Deriva suave aleatoria
 			p.vx += r.nextDouble(-18, 18) * dtSeconds;
 
-			// Wrap/respawn
 			if (y > getHeight() + 30) {
 				y = r.nextDouble(SPAWN_TOP_PADDING - 30, SPAWN_TOP_PADDING);
 				x = r.nextDouble(0, Math.max(1, getWidth() - ((Rectangle) p.node).getWidth()));
@@ -130,7 +127,6 @@ public final class Confeti extends Pane {
 				((Rectangle) p.node).setFill(randomConfettiColor(r));
 			}
 
-			// Mantener dentro de bordes horizontales (rebote suave)
 			if (x < -20) {
 				x = -20;
 				p.vx = Math.abs(p.vx);
@@ -146,7 +142,7 @@ public final class Confeti extends Pane {
 	}
 
 	private static Color randomConfettiColor(ThreadLocalRandom r) {
-		// Paleta viva (evita colores demasiado oscuros)
+
 		Color[] palette = new Color[] {
 				Color.web("#ff4757"),
 				Color.web("#ffa502"),

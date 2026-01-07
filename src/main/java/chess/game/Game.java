@@ -20,9 +20,9 @@ public class Game {
     private int moveCount;
     private StepHistory stepHistory;
     private StepHistoryStore stepHistoryStore;
-    private boolean shouldSaveMoves = true; // Flag para controlar si guardar movimientos
-    private Piece lastCapturedPiece = null; // Track the last captured piece
-    private GameClock gameClock; // Clock for tracking player time
+    private boolean shouldSaveMoves = true;
+    private Piece lastCapturedPiece = null;
+    private GameClock gameClock;
 
     public Game(Player white, Player black) {
         this.board = new Board();
@@ -34,7 +34,7 @@ public class Game {
         this.moveCount = 0;
         this.stepHistory = new StepHistory();
         this.stepHistoryStore = new StepHistoryStore("game_history.dat");
-        this.gameClock = new GameClock(); // Initialize with 5 minutes per player
+        this.gameClock = new GameClock();
     }
 
     public Board getBoard() {
@@ -80,12 +80,11 @@ public class Game {
     }
 
     public boolean applyMove(Move m) {
-        // Check if game is over
+
         if (gameOver) {
             return false;
         }
 
-        // Check if time has expired for current player
         if (gameClock.hasTimeExpired(turn)) {
             gameOver = true;
             PieceColor winner = (turn == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
@@ -94,39 +93,32 @@ public class Game {
             return false;
         }
 
-        // Check if it's the correct player's turn
         Piece movingPiece = board.getPieceAt(m.getFrom());
         if (movingPiece == null || movingPiece.getColor() != turn) {
             return false;
         }
 
-        // Check if move is legal
         if (!isMoveLegal(m)) {
             return false;
         }
 
-    // Capture board state needed for deterministic undo/redo
-    chess.model.Position enPassantBefore = board.getEnPassantTarget();
-    Piece moverBefore = board.getPieceAt(m.getFrom());
+        chess.model.Position enPassantBefore = board.getEnPassantTarget();
+        Piece moverBefore = board.getPieceAt(m.getFrom());
 
-    // Apply the move and track captured piece
-    lastCapturedPiece = board.movePiece(m);
+        lastCapturedPiece = board.movePiece(m);
 
-    chess.model.Position enPassantAfter = board.getEnPassantTarget();
+        chess.model.Position enPassantAfter = board.getEnPassantTarget();
         turn = turn.opposite();
         moveCount++;
 
-        // Update game clock - switch active player
         gameClock.switchPlayer();
 
-        // Guardar el step en el historial (solo si está habilitado)
         if (shouldSaveMoves) {
             Step step = buildStepForAppliedMove(m, moverBefore, lastCapturedPiece, enPassantBefore, enPassantAfter);
             stepHistory.recordApplied(step);
             stepHistoryStore.saveApplied(stepHistory);
         }
 
-        // Check game state after move
         checkGameState();
 
         return true;
@@ -138,15 +130,11 @@ public class Game {
             chess.model.Position enPassantBefore,
             chess.model.Position enPassantAfter) {
         Piece moverAfter = board.getPieceAt(move.getTo());
-        PieceColor moverColor = moverAfter != null ? moverAfter.getColor() : turn.opposite(); // best-effort
+        PieceColor moverColor = moverAfter != null ? moverAfter.getColor() : turn.opposite();
         chess.model.PieceType moverType = moverAfter != null ? moverAfter.getType() : null;
 
-        // IMPORTANT: must match the existing UI format exactly
-        // Examples: "e2-e4" or "O-O" / "O-O-O" (castling is handled by the controller UI,
-        // but we keep generic notation here).
         String displayText = toChessNotation(move.getFrom()) + "-" + toChessNotation(move.getTo());
 
-        // Special cases
         boolean castling = moverBefore != null && moverBefore.getType() == chess.model.PieceType.KING &&
                 move.getFrom().getRow() == move.getTo().getRow() &&
                 Math.abs(move.getFrom().getCol() - move.getTo().getCol()) == 2;
@@ -163,10 +151,9 @@ public class Game {
                 rookFrom = new chess.model.Position(row, 0);
                 rookTo = new chess.model.Position(row, 3);
             }
-            Piece rookBefore = board.getPieceAt(rookTo); // after move, rook is already on rookTo
+            Piece rookBefore = board.getPieceAt(rookTo);
             if (rookBefore instanceof chess.model.pieces.Rook) {
-                // We don't have rook "before" snapshot here; best effort is to assume false.
-                // We'll compute the true "before" in controller when we build the step from MoveResult.
+
                 rookHadMovedBefore = ((chess.model.pieces.Rook) rookBefore).hasMovedFromStart();
             }
         }
@@ -221,10 +208,9 @@ public class Game {
     }
 
     private boolean isMoveLegal(Move m) {
-        // Centralized query for legal moves
+
         java.util.List<Move> legalMoves = RulesEngine.legalMoves(board, turn);
 
-        // Check if the move is in the list of legal moves
         for (Move legalMove : legalMoves) {
             if (legalMove.getFrom().equals(m.getFrom()) &&
                     legalMove.getTo().equals(m.getTo())) {
@@ -235,15 +221,13 @@ public class Game {
     }
 
     private void checkGameState() {
-        // Centralized evaluation (keeps Game small; delegates to Board's existing rule methods)
+
         String result = RulesEngine.evaluateGameResult(board, turn);
         if (result != null) {
             gameOver = true;
             gameResult = result;
         }
 
-        // Optional: Check for 50-move rule
-        // Optional: Check for threefold repetition
     }
 
     public Move getAIMoveIfAny() {
@@ -269,8 +253,8 @@ public class Game {
         gameOver = false;
         gameResult = null;
         moveCount = 0;
-        gameClock.reset(); // Reset the clock
-        // NO limpiar el historial aquí - solo resets internos
+        gameClock.reset();
+
     }
 
     /**
@@ -283,7 +267,7 @@ public class Game {
         gameOver = false;
         gameResult = null;
         moveCount = 0;
-        gameClock.reset(); // Reset the clock
+        gameClock.reset();
         stepHistory.clear();
         stepHistoryStore.saveApplied(stepHistory);
     }
@@ -293,8 +277,6 @@ public class Game {
             return false;
         }
 
-        // Note: This is a simplified undo. For a proper implementation,
-        // you'd need to maintain a move history in the Board class.
         boolean success = board.undoLastMove();
         if (success) {
             turn = turn.opposite();

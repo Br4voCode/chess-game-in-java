@@ -4,16 +4,21 @@ import java.io.Serializable;
 
 public class Position implements Serializable {
     private static final long serialVersionUID = 1L;
-    private int row; // 0..7
-    private int col; // 0..7
+    private int row;
+    private int col;
 
     public Position(int row, int col) {
         this.row = row;
         this.col = col;
     }
 
-    public int getRow() { return row; }
-    public int getCol() { return col; }
+    public int getRow() {
+        return row;
+    }
+
+    public int getCol() {
+        return col;
+    }
 
     public boolean isValid() {
         return row >= 0 && row < 8 && col >= 0 && col < 8;
@@ -21,7 +26,8 @@ public class Position implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof Position)) return false;
+        if (!(o instanceof Position))
+            return false;
         Position p = (Position) o;
         return row == p.row && col == p.col;
     }

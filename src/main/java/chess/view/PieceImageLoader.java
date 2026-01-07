@@ -15,7 +15,8 @@ public class PieceImageLoader {
     private static final double DEFAULT_SIZE = 24;
 
     /**
-     * Desactiva logs ruidosos por defecto; si necesitás debug visual, ponelo en true.
+     * Desactiva logs ruidosos por defecto; si necesitás debug visual, ponelo en
+     * true.
      */
     private static final boolean DEBUG = false;
 
@@ -27,22 +28,21 @@ public class PieceImageLoader {
      */
     public static String getImageFileName(String pieceSymbol) {
         return switch (pieceSymbol) {
-            // Piezas blancas
+
             case "♔" -> "white_king.png";
             case "♕" -> "white_queen.png";
             case "♖" -> "white_rook.png";
             case "♗" -> "white_bishop.png";
             case "♘" -> "white_knight.png";
             case "♙" -> "white_pawn.png";
-            
-            // Piezas negras
+
             case "♚" -> "black_king.png";
             case "♛" -> "black_queen.png";
             case "♜" -> "black_rook.png";
             case "♝" -> "black_bishop.png";
             case "♞" -> "black_knight.png";
             case "♟" -> "black_pawn.png";
-            
+
             default -> null;
         };
     }
@@ -68,7 +68,6 @@ public class PieceImageLoader {
                     return null;
                 }
 
-                // requestedWidth/Height=0 => tamaño original; preservamos ratio y suavizado.
                 return new Image(in, 0.0, 0.0, true, true);
             } catch (Exception e) {
                 if (DEBUG) {
@@ -80,7 +79,8 @@ public class PieceImageLoader {
     }
 
     /**
-     * Carga una imagen de una pieza y devuelve un ImageView con el tamaño especificado
+     * Carga una imagen de una pieza y devuelve un ImageView con el tamaño
+     * especificado
      */
     public static ImageView loadPieceImage(String pieceSymbol, double size) {
         Image image = loadPieceImageRaw(pieceSymbol);
@@ -105,11 +105,12 @@ public class PieceImageLoader {
     /**
      * Precarga todas las imágenes de piezas en el cache.
      *
-     * Útil para que al entrar al juego la UI no tenga "stutter" por I/O/decodificación.
+     * Útil para que al entrar al juego la UI no tenga "stutter" por
+     * I/O/decodificación.
      * Se puede invocar al inicio de la app (por ejemplo en el start()).
      */
     public static void preloadAllPieceImages() {
-        // Blancas
+
         loadPieceImageRaw("♔");
         loadPieceImageRaw("♕");
         loadPieceImageRaw("♖");
@@ -117,7 +118,6 @@ public class PieceImageLoader {
         loadPieceImageRaw("♘");
         loadPieceImageRaw("♙");
 
-        // Negras
         loadPieceImageRaw("♚");
         loadPieceImageRaw("♛");
         loadPieceImageRaw("♜");

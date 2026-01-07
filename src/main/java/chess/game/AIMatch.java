@@ -16,9 +16,9 @@ public class AIMatch {
     private boolean isPaused = false;
     private Runnable onGameOver;
     private MoveCallback onMoveExecuted;
-    private long delayBetweenMoves = 1000; // 移动之间的毫秒数
+    private long delayBetweenMoves = 1000;
     private int moveCount = 0;
-    private int maxMoves = 200; // 防止无限循环的最大限制
+    private int maxMoves = 200;
 
     /**
      * 用于以视觉方式执行移动的回调接口
@@ -58,7 +58,6 @@ public class AIMatch {
             return;
         }
 
-        // 防止无限循环的最大移动限制
         if (moveCount >= maxMoves) {
             game.setGameOver(true, "تعادل - تم الوصول للحد الأقصى من الحركات");
             if (onGameOver != null) {
@@ -72,23 +71,22 @@ public class AIMatch {
             PieceColor currentTurn = game.getTurn();
             AIPlayer currentAI = (currentTurn == PieceColor.WHITE) ? whiteAI : blackAI;
 
-            // 从人工智能计算移动
             Move move = currentAI.chooseMove(game.getBoard());
 
             if (move != null) {
                 moveCount++;
-                
+
                 if (onMoveExecuted != null) {
-                    // 通过视觉回调执行移动
+
                     Platform.runLater(() -> {
                         onMoveExecuted.executeMove(move);
-                        // جدولة الحركة التالية بعد تأخير
+
                         scheduleNextMove();
                     });
                 } else {
-                    // 如果没有回调，直接应用移动
+
                     if (!game.applyMove(move)) {
-                        // 如果移动失败
+
                         if (game.isGameOver()) {
                             if (onGameOver != null) {
                                 Platform.runLater(onGameOver);
@@ -97,11 +95,11 @@ public class AIMatch {
                             return;
                         }
                     }
-                    // 安排下一步移动
+
                     scheduleNextMove();
                 }
             } else {
-                // 人工智能无法移动（将军或僵局）
+
                 if (game.isGameOver()) {
                     if (onGameOver != null) {
                         Platform.runLater(onGameOver);
@@ -176,7 +174,7 @@ public class AIMatch {
      * تعيين التأخير بين الحركات (بالميلي ثانية)
      */
     public void setDelayBetweenMoves(long delayMs) {
-        this.delayBetweenMoves = Math.max(100, delayMs); // الحد الأدنى 100ms
+        this.delayBetweenMoves = Math.max(100, delayMs);
     }
 
     /**

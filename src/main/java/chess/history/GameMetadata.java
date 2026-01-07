@@ -9,9 +9,9 @@ public class GameMetadata implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public enum GameMode {
-        PVP,    // Player vs Player
-        PVAI,   // Player vs AI
-        AIVAI   // AI vs AI
+        PVP,
+        PVAI,
+        AIVAI
     }
 
     private final GameMode gameMode;

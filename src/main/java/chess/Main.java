@@ -19,20 +19,15 @@ public class Main extends Application {
         primaryStage.setMinWidth(800);
         primaryStage.setMinHeight(600);
 
-        // Precargar imágenes de piezas ANTES de generar la UI del juego.
-        // Así evitamos tirones cuando se dibujan por primera vez las piezas.
         PieceImageLoader.preloadAllPieceImages();
-        
-        // Crear el contenedor principal
+
         root = new StackPane();
         root.setStyle("-fx-background-color: #2b2b2b;");
-        
-        // Crear la Scene una sola vez con el contenedor principal
+
         Scene scene = new Scene(root);
         primaryStage.setScene(scene);
         primaryStage.setFullScreen(true);
 
-        // Mostrar pantalla de inicio
         showStartScreen();
 
         primaryStage.show();
@@ -43,8 +38,7 @@ public class Main extends Application {
                 this::startNewGame,
                 this::loadLastGame,
                 this::startNewTwoPlayerGame,
-                this::startNewAIVsAIGame
-        );
+                this::startNewAIVsAIGame);
         root.getChildren().clear();
         root.getChildren().add(startScreen.getRoot());
     }
