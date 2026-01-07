@@ -24,21 +24,21 @@ public abstract class Piece {
         // Devolver identificadores simples para las piezas
         if (color == PieceColor.WHITE) {
             switch (type) {
-                case KING: return "k";
-                case QUEEN: return "q";
-                case ROOK: return "r";
-                case BISHOP: return "b";
-                case KNIGHT: return "n";
-                case PAWN: return "p";
-            }
-        } else {
-            switch (type) {
                 case KING: return "K";
                 case QUEEN: return "Q";
                 case ROOK: return "R";
                 case BISHOP: return "B";
                 case KNIGHT: return "N";
                 case PAWN: return "P";
+            }
+        } else {
+            switch (type) {
+                case KING: return "k";
+                case QUEEN: return "q";
+                case ROOK: return "r";
+                case BISHOP: return "b";
+                case KNIGHT: return "n";
+                case PAWN: return "p";
             }
         }
         return "?";

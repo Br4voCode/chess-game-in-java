@@ -169,37 +169,48 @@ public class ChessSquare {
 	}
 
 	private void loadPieceImage(String pieceSymbol) {
-		String imagePath = String.format("/images/pieces/%s/%s.png", pieceSet, getImageName(pieceSymbol));
+		String imageName = getImageName(pieceSymbol);
+		String imagePath = String.format("/images/pieces/%s/%s.png", pieceSet, imageName);
+		
+		// Debug: imprimir información
+		System.out.println("DEBUG: Cargando pieza - Símbolo: '" + pieceSymbol + "' -> Imagen: '" + imageName + "' -> Ruta: '" + imagePath + "'");
+		
 		try {
 			Image image = new Image(getClass().getResourceAsStream(imagePath));
-			pieceImageView.setImage(image);
+			if (image.isError()) {
+				System.err.println("ERROR: Imagen con error: " + imagePath);
+				pieceImageView.setVisible(false);
+			} else {
+				pieceImageView.setImage(image);
+				System.out.println("SUCCESS: Imagen cargada correctamente: " + imagePath);
+			}
 		} catch (Exception e) {
-			System.err.println("Error cargando imagen: " + imagePath + " - " + e.getMessage());
+			System.err.println("EXCEPTION: Error cargando imagen: " + imagePath + " - " + e.getMessage());
 			pieceImageView.setVisible(false);
 		}
 	}
 
 	private String getImageName(String pieceSymbol) {
-		// Mapear nombres de piezas a archivos de imagen
-		switch (pieceSymbol.toLowerCase()) {
-			// Piezas blancas
-			case "k": case "king_white": case "white_king": return "white_king";
-			case "q": case "queen_white": case "white_queen": return "white_queen";
-			case "r": case "rook_white": case "white_rook": return "white_rook";
-			case "b": case "bishop_white": case "white_bishop": return "white_bishop";
-			case "n": case "knight_white": case "white_knight": return "white_knight";
-			case "p": case "pawn_white": case "white_pawn": return "white_pawn";
+		// Mapear símbolos directamente a nombres de archivo
+		switch (pieceSymbol) {
+			// Piezas blancas (mayúsculas)
+			case "K": return "white_king";
+			case "Q": return "white_queen";
+			case "R": return "white_rook";
+			case "B": return "white_bishop";
+			case "N": return "white_knight";
+			case "P": return "white_pawn";
 			
-			// Piezas negras
-			case "K": case "king_black": case "black_king": return "black_king";
-			case "Q": case "queen_black": case "black_queen": return "black_queen";
-			case "R": case "rook_black": case "black_rook": return "black_rook";
-			case "B": case "bishop_black": case "black_bishop": return "black_bishop";
-			case "N": case "knight_black": case "black_knight": return "black_knight";
-			case "P": case "pawn_black": case "black_pawn": return "black_pawn";
+			// Piezas negras (minúsculas)
+			case "k": return "black_king";
+			case "q": return "black_queen";
+			case "r": return "black_rook";
+			case "b": return "black_bishop";
+			case "n": return "black_knight";
+			case "p": return "black_pawn";
 			
 			default: 
-				System.err.println("Pieza desconocida: " + pieceSymbol);
+				System.err.println("WARN: Símbolo de pieza desconocido: '" + pieceSymbol + "'");
 				return "white_pawn"; // Fallback
 		}
 	}
