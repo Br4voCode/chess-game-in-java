@@ -60,7 +60,7 @@ public class Board {
     }
 
     /**
-     * Apply move to this board (mutates). Handles pawn promotion to queen by default.
+     * Apply move to this board (mutates). Handles pawn promotion to queen by default and castling.
      */
     public void movePiece(Move move) {
         Position from = move.getFrom();
@@ -68,25 +68,65 @@ public class Board {
         Piece p = getPieceAt(from);
         if (p == null) return;
         
-        // Guardar información del movimiento
         lastMove = move;
         lastMoveFrom = from;
         lastMoveTo = to;
         
-        // Ejecutar movimiento
+        if (p.getType() == PieceType.KING) {
+            if (from.getRow() == to.getRow() && Math.abs(from.getCol() - to.getCol()) == 2) {
+                handleCastling(from, to, p.getColor());
+            }
+        }
+        
         setPieceAt(to, p);
         setPieceAt(from, null);
+        
+        if (p.getType() == PieceType.KING && p instanceof chess.model.pieces.King) {
+            ((chess.model.pieces.King) p).setHasMoved(true);
+        }
+        
+        if (p.getType() == PieceType.ROOK && p instanceof chess.model.pieces.Rook) {
+            ((chess.model.pieces.Rook) p).setHasMoved(true);
+        }
 
-        // promotion (if pawn reaches last rank)
         if (p.getType() == PieceType.PAWN) {
             if ((p.getColor() == PieceColor.WHITE && to.getRow() == 0) ||
                 (p.getColor() == PieceColor.BLACK && to.getRow() == 7)) {
-                // promote to queen by default (or Move.promotion if provided)
                 Piece promotion = move.getPromotion();
                 if (promotion != null) {
                     setPieceAt(to, promotion);
                 } else {
                     setPieceAt(to, new Queen(p.getColor()));
+                }
+            }
+        }
+    }
+
+    private void handleCastling(Position kingFrom, Position kingTo, PieceColor color) {
+        int row = kingFrom.getRow();
+        int kingFromCol = kingFrom.getCol();
+        int kingToCol = kingTo.getCol();
+        
+        if (kingToCol > kingFromCol) {
+            Position rookFrom = new Position(row, 7);
+            Position rookTo = new Position(row, 5);
+            Piece rook = getPieceAt(rookFrom);
+            if (rook != null) {
+                setPieceAt(rookTo, rook);
+                setPieceAt(rookFrom, null);
+                if (rook instanceof chess.model.pieces.Rook) {
+                    ((chess.model.pieces.Rook) rook).setHasMoved(true);
+                }
+            }
+        } else {
+            Position rookFrom = new Position(row, 0);
+            Position rookTo = new Position(row, 3);
+            Piece rook = getPieceAt(rookFrom);
+            if (rook != null) {
+                setPieceAt(rookTo, rook);
+                setPieceAt(rookFrom, null);
+                if (rook instanceof chess.model.pieces.Rook) {
+                    ((chess.model.pieces.Rook) rook).setHasMoved(true);
                 }
             }
         }
@@ -129,6 +169,13 @@ public class Board {
         List<Move> pseudo = piece.getPseudoLegalMoves(this, position);
         
         for (Move m : pseudo) {
+            // Additional validation for castling moves
+            if (piece.getType() == PieceType.KING && isKingCastlingMove(position, m)) {
+                if (!isValidCastlingMove(position, m, color)) {
+                    continue; // Skip invalid castling moves
+                }
+            }
+            
             Board copy = this.copy();
             copy.movePiece(m);
             if (!copy.isKingInCheck(color)) {
@@ -136,6 +183,32 @@ public class Board {
             }
         }
         return allMoves;
+    }
+    
+    private boolean isKingCastlingMove(Position from, Move move) {
+        return from.getRow() == move.getTo().getRow() && 
+               Math.abs(from.getCol() - move.getTo().getCol()) == 2;
+    }
+    
+    private boolean isValidCastlingMove(Position kingPos, Move castlingMove, PieceColor color) {
+        if (isKingInCheck(color)) {
+            return false;
+        }
+        
+        int kingFromCol = kingPos.getCol();
+        int kingToCol = castlingMove.getTo().getCol();
+        int row = kingPos.getRow();
+        PieceColor opponent = color.opposite();
+        
+        if (kingToCol > kingFromCol) {
+            Position f = new Position(row, 5);
+            Position g = new Position(row, 6);
+            return !isSquareUnderAttack(f, opponent) && !isSquareUnderAttack(g, opponent);
+        } else {
+            Position c = new Position(row, 2);
+            Position d = new Position(row, 3);
+            return !isSquareUnderAttack(c, opponent) && !isSquareUnderAttack(d, opponent);
+        }
     }
 
     /**
@@ -263,9 +336,19 @@ public class Board {
                 PieceType t = p.getType();
                 Piece newP = null;
                 switch (t) {
-                    case KING: newP = new King(col); break;
+                    case KING: 
+                        newP = new King(col);
+                        if (p instanceof King) {
+                            ((King) newP).setHasMoved(((King) p).hasMovedFromStart());
+                        }
+                        break;
                     case QUEEN: newP = new Queen(col); break;
-                    case ROOK: newP = new Rook(col); break;
+                    case ROOK: 
+                        newP = new Rook(col);
+                        if (p instanceof Rook) {
+                            ((Rook) newP).setHasMoved(((Rook) p).hasMovedFromStart());
+                        }
+                        break;
                     case BISHOP: newP = new Bishop(col); break;
                     case KNIGHT: newP = new Knight(col); break;
                     case PAWN: newP = new Pawn(col); break;

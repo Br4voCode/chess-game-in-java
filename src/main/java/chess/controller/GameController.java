@@ -142,65 +142,125 @@ public class GameController {
             return;
         }
         
-        // 1. Obtener símbolo de la pieza ANTES de limpiar
-        String pieceSymbol = movedPiece.toUnicode();
-        
-        // 2. LIMPIAR COMPLETAMENTE todos los highlights ANTES de animar
         chessBoard.clearHighlights();
         selectedPosition = null;
         
-        // 3. Mostrar mensaje
         statusBar.setStatus("Moving " + movedPiece.getType() + "...");
         
-        // 4. Dar un pequeño delay para asegurar que se limpió todo visualmente
         PauseTransition initialPause = new PauseTransition(Duration.millis(50));
         initialPause.setOnFinished(e -> {
-            // 5. Animar el movimiento secuencialmente
-            chessBoard.animateMove(move, () -> {
-                // 6. Aplicar movimiento en el modelo DESPUÉS de la animación
-                boolean moveSuccessful = game.applyMove(move);
-                
-                if (moveSuccessful) {
-                    // 7. Actualizar vista con nuevo estado
-                    // Nota: No necesitamos actualizar las casillas porque la animación ya lo hizo visualmente
-                    // Pero sí necesitamos sincronizar el estado del modelo
-                    chessBoard.updateSingleSquare(from);
-                    chessBoard.updateSingleSquare(to);
+            boolean isCastling = isCastlingMove(move, movedPiece);
+            
+            if (isCastling) {
+                animateCastling(move, () -> {
+                    boolean moveSuccessful = game.applyMove(move);
                     
-                    String moveDescription = movedPiece.getType() + 
-                                           " " + positionToChessNotation(from) + 
-                                           " to " + positionToChessNotation(to);
-                    
-                    // 8. Verificar estado del juego
-                    PieceColor opponentColor = game.getTurn();
-                    if (game.getBoard().isKingInCheck(opponentColor)) {
-                        moveDescription += " - CHECK!";
+                    if (moveSuccessful) {
+                        chessBoard.updateSingleSquare(from);
+                        chessBoard.updateSingleSquare(to);
+                        updateBoardAfterCastling(from, to);
                         
-                        if (game.getBoard().isCheckmate(opponentColor)) {
-                            moveDescription += " CHECKMATE! " + 
-                                             (opponentColor == PieceColor.WHITE ? "Black" : "White") + 
-                                             " wins!";
-                            statusBar.setStatus(moveDescription);
-                            isAnimating = false;
-                            return;
+                        String moveDescription = "Castling (" + 
+                                               (to.getCol() > from.getCol() ? "Kingside" : "Queenside") + ")";
+                        
+                        PieceColor opponentColor = game.getTurn();
+                        if (game.getBoard().isKingInCheck(opponentColor)) {
+                            moveDescription += " - CHECK!";
+                            
+                            if (game.getBoard().isCheckmate(opponentColor)) {
+                                moveDescription += " CHECKMATE! " + 
+                                                 (opponentColor == PieceColor.WHITE ? "Black" : "White") + 
+                                                 " wins!";
+                                statusBar.setStatus(moveDescription);
+                                isAnimating = false;
+                                return;
+                            }
                         }
+                        
+                        statusBar.setStatus("Move: " + moveDescription + ". " + 
+                                          game.getTurn() + " to move.");
+                        
+                        handleAITurn();
+                    } else {
+                        statusBar.setStatus("Move failed. " + game.getTurn() + " to move.");
+                        updateBoardState();
                     }
                     
-                    statusBar.setStatus("Move: " + moveDescription + ". " + 
-                                      game.getTurn() + " to move.");
+                    isAnimating = false;
+                });
+            } else {
+                chessBoard.animateMove(move, () -> {
+                    boolean moveSuccessful = game.applyMove(move);
                     
-                    // 9. Manejar turno de IA
-                    handleAITurn();
-                } else {
-                    // Si el movimiento falló, restaurar vista completa
-                    statusBar.setStatus("Move failed. " + game.getTurn() + " to move.");
-                    updateBoardState();
-                }
-                
-                isAnimating = false;
-            });
+                    if (moveSuccessful) {
+                        chessBoard.updateSingleSquare(from);
+                        chessBoard.updateSingleSquare(to);
+                        
+                        String moveDescription = movedPiece.getType() + 
+                                               " " + positionToChessNotation(from) + 
+                                               " to " + positionToChessNotation(to);
+                        
+                        PieceColor opponentColor = game.getTurn();
+                        if (game.getBoard().isKingInCheck(opponentColor)) {
+                            moveDescription += " - CHECK!";
+                            
+                            if (game.getBoard().isCheckmate(opponentColor)) {
+                                moveDescription += " CHECKMATE! " + 
+                                                 (opponentColor == PieceColor.WHITE ? "Black" : "White") + 
+                                                 " wins!";
+                                statusBar.setStatus(moveDescription);
+                                isAnimating = false;
+                                return;
+                            }
+                        }
+                        
+                        statusBar.setStatus("Move: " + moveDescription + ". " + 
+                                          game.getTurn() + " to move.");
+                        
+                        handleAITurn();
+                    } else {
+                        statusBar.setStatus("Move failed. " + game.getTurn() + " to move.");
+                        updateBoardState();
+                    }
+                    
+                    isAnimating = false;
+                });
+            }
         });
         initialPause.play();
+    }
+    
+    private boolean isCastlingMove(Move move, Piece movedPiece) {
+        return movedPiece.getType() == PieceType.KING && 
+               move.getFrom().getRow() == move.getTo().getRow() && 
+               Math.abs(move.getFrom().getCol() - move.getTo().getCol()) == 2;
+    }
+    
+    private void animateCastling(Move kingMove, Runnable onFinished) {
+        Position kingFrom = kingMove.getFrom();
+        Position kingTo = kingMove.getTo();
+        int row = kingFrom.getRow();
+        
+        Move rookMove;
+        if (kingTo.getCol() > kingFrom.getCol()) {
+            rookMove = new Move(new Position(row, 7), new Position(row, 5));
+        } else {
+            rookMove = new Move(new Position(row, 0), new Position(row, 3));
+        }
+        
+        chessBoard.animateMovesSimultaneously(kingMove, rookMove, onFinished);
+    }
+    
+    private void updateBoardAfterCastling(Position kingFrom, Position kingTo) {
+        int row = kingFrom.getRow();
+        
+        if (kingTo.getCol() > kingFrom.getCol()) {
+            chessBoard.updateSingleSquare(new Position(row, 7));
+            chessBoard.updateSingleSquare(new Position(row, 5));
+        } else {
+            chessBoard.updateSingleSquare(new Position(row, 0));
+            chessBoard.updateSingleSquare(new Position(row, 3));
+        }
     }
 
     private void handleAITurn() {
@@ -208,10 +268,9 @@ public class GameController {
         if (aiMove != null) {
             new Thread(() -> {
                 try {
-                    Thread.sleep(800); // Delay para mejor UX
+                    Thread.sleep(800);
                     
                     javafx.application.Platform.runLater(() -> {
-                        // Limpiar antes del movimiento de la IA
                         chessBoard.clearHighlights();
                         selectedPosition = null;
                         
