@@ -32,22 +32,22 @@ public class Game {
         this.gameClock = new GameClock(); // Initialize with 5 minutes per player
     }
 
-    public Board getBoard() { 
-        return board; 
+    public Board getBoard() {
+        return board;
     }
-    
-    public PieceColor getTurn() { 
-        return turn; 
+
+    public PieceColor getTurn() {
+        return turn;
     }
-    
+
     public boolean isGameOver() {
         return gameOver;
     }
-    
+
     public String getGameResult() {
         return gameResult;
     }
-    
+
     public int getMoveCount() {
         return moveCount;
     }
@@ -57,7 +57,7 @@ public class Game {
         if (gameOver) {
             return false;
         }
-        
+
         // Check if time has expired for current player
         if (gameClock.hasTimeExpired(turn)) {
             gameOver = true;
@@ -66,47 +66,47 @@ public class Game {
             gameClock.stop();
             return false;
         }
-        
+
         // Check if it's the correct player's turn
         Piece movingPiece = board.getPieceAt(m.getFrom());
         if (movingPiece == null || movingPiece.getColor() != turn) {
             return false;
         }
-        
+
         // Check if move is legal
         if (!isMoveLegal(m)) {
             return false;
         }
-        
+
         // Apply the move and track captured piece
         lastCapturedPiece = board.movePiece(m);
         // Apply the move
         board.movePiece(m);
         turn = turn.opposite();
         moveCount++;
-        
+
         // Update game clock - switch active player
         gameClock.switchPlayer();
-        
+
         // Guardar el movimiento en el historial (solo si está habilitado)
         if (shouldSaveMoves) {
             moveHistory.addMove(m);
         }
-        
+
         // Check game state after move
         checkGameState();
-        
+
         return true;
     }
 
     private boolean isMoveLegal(Move m) {
         // Get all legal moves for current player
         java.util.List<Move> legalMoves = board.getAllPossibleMoves(turn);
-        
+
         // Check if the move is in the list of legal moves
         for (Move legalMove : legalMoves) {
-            if (legalMove.getFrom().equals(m.getFrom()) && 
-                legalMove.getTo().equals(m.getTo())) {
+            if (legalMove.getFrom().equals(m.getFrom()) &&
+                    legalMove.getTo().equals(m.getTo())) {
                 return true;
             }
         }
@@ -121,21 +121,21 @@ public class Game {
             gameResult = "Checkmate! " + winner + " wins!";
             return;
         }
-        
+
         // Check for stalemate
         if (board.isStalemate(turn)) {
             gameOver = true;
             gameResult = "Stalemate! Game drawn.";
             return;
         }
-        
+
         // Check for insufficient material
         if (board.isInsufficientMaterial()) {
             gameOver = true;
             gameResult = "Draw by insufficient material.";
             return;
         }
-        
+
         // Optional: Check for 50-move rule
         // Optional: Check for threefold repetition
     }
@@ -144,12 +144,17 @@ public class Game {
         if (gameOver) {
             return null;
         }
-        
+
         Player currentPlayer = (turn == PieceColor.WHITE) ? white : black;
         if (currentPlayer instanceof AIPlayer) {
             return currentPlayer.chooseMove(board);
         }
         return null;
+    }
+
+    public Move getBestMove() {
+        Player currentPlayer = (turn == PieceColor.WHITE) ? white : black;
+        return currentPlayer.chooseMove(board);
     }
 
     public void reset() {
@@ -163,7 +168,8 @@ public class Game {
     }
 
     /**
-     * Reinicia el juego para una nueva partida, limpiando el historial de movimientos
+     * Reinicia el juego para una nueva partida, limpiando el historial de
+     * movimientos
      */
     public void resetForNewGame() {
         board.initialize();
@@ -179,7 +185,7 @@ public class Game {
         if (moveCount == 0) {
             return false;
         }
-        
+
         // Note: This is a simplified undo. For a proper implementation,
         // you'd need to maintain a move history in the Board class.
         boolean success = board.undoLastMove();
@@ -212,11 +218,11 @@ public class Game {
         if (gameOver) {
             return gameResult;
         }
-        
+
         if (board.isKingInCheck(turn)) {
             return turn + " is in check";
         }
-        
+
         return turn + " to move";
     }
 
@@ -245,6 +251,7 @@ public class Game {
 
     /**
      * Obtiene el historial de movimientos de la partida
+     * 
      * @return el objeto MoveHistory
      */
     public MoveHistory getMoveHistory() {
@@ -252,7 +259,9 @@ public class Game {
     }
 
     /**
-     * Establece la ruta del archivo de historial (debe llamarse antes de empezar la partida)
+     * Establece la ruta del archivo de historial (debe llamarse antes de empezar la
+     * partida)
+     * 
      * @param filePath la ruta del archivo .dat
      */
     public void setMoveHistoryPath(String filePath) {
@@ -261,13 +270,16 @@ public class Game {
 
     /**
      * Establece si los movimientos deben guardarse en el historial
+     * 
      * @param shouldSave true para guardar movimientos, false para solo aplicarlos
      */
     public void setShouldSaveMoves(boolean shouldSave) {
         this.shouldSaveMoves = shouldSave;
     }
+
     /**
      * Obtiene la última pieza capturada
+     * 
      * @return la última pieza capturada, o null si no hubo captura
      */
     public Piece getLastCapturedPiece() {
@@ -280,8 +292,10 @@ public class Game {
     public void clearLastCapturedPiece() {
         lastCapturedPiece = null;
     }
+
     /**
      * Get the game clock
+     * 
      * @return the GameClock instance
      */
     public GameClock getGameClock() {
@@ -290,6 +304,7 @@ public class Game {
 
     /**
      * Set a custom game clock
+     * 
      * @param gameClock the GameClock to use
      */
     public void setGameClock(GameClock gameClock) {
