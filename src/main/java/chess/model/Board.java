@@ -184,6 +184,11 @@ public class Board {
                 Position pos = new Position(r, c);
                 List<Move> pseudo = p.getPseudoLegalMoves(this, pos);
                 for (Move m : pseudo) {
+                    if (p.getType() == PieceType.KING && isKingCastlingMove(pos, m)) {
+                        if (!isValidCastlingMove(pos, m, color)) {
+                            continue;
+                        }
+                    }
 
                     Board copy = this.copy();
                     copy.movePiece(m);
