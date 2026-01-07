@@ -19,6 +19,7 @@ import chess.model.pieces.Queen;
 import chess.model.pieces.Rook;
 import chess.rules.MoveResult;
 import chess.rules.RulesEngine;
+import chess.util.SoundManager;
 import chess.view.ChessBoard;
 import chess.view.PromotionDialog;
 import chess.view.components.StatusBar;
@@ -635,6 +636,9 @@ public class GameController {
                     boolean moveSuccessful = result.isMoveApplied();
 
                     if (moveSuccessful) {
+                        // Reproducir sonido de movimiento
+                        SoundManager.playSound("1.mp3");
+                        
                         chessBoard.updateSingleSquare(from);
                         chessBoard.updateSingleSquare(to);
                         updateBoardAfterCastling(from, to);
@@ -712,6 +716,8 @@ public class GameController {
                     boolean isCheckMove = false;
 
                     if (moveSuccessful) {
+                        // Reproducir sonido de movimiento
+                        SoundManager.playSound("1.mp3");
 
                         Piece capturedPiece = result.getCapturedPiece();
                         if (capturedPiece != null && gameView != null) {

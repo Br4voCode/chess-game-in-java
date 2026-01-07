@@ -28,6 +28,11 @@
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-media</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
     </dependencies>
     
     <build>
@@ -48,6 +53,10 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>chess.Main</mainClass>
+                    <options>
+                        <option>--add-modules</option>
+                        <option>javafx.controls,javafx.fxml,javafx.media</option>
+                    </options>
                 </configuration>
             </plugin>
             
