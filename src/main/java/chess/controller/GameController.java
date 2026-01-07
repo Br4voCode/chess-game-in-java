@@ -41,7 +41,8 @@ public class GameController {
         this(game, chessBoard, statusBar, isTwoPlayerMode, false);
     }
 
-    public GameController(Game game, ChessBoard chessBoard, StatusBar statusBar, boolean isTwoPlayerMode, boolean isAIVsAIMode) {
+    public GameController(Game game, ChessBoard chessBoard, StatusBar statusBar, boolean isTwoPlayerMode,
+            boolean isAIVsAIMode) {
         this.game = game;
         this.chessBoard = chessBoard;
         this.statusBar = statusBar;
@@ -226,7 +227,7 @@ public class GameController {
                             gameView.updateUIFromController();
                             gameView.updateTimers();
                         }
-                        
+
                         // Check if time expired
                         if (game.getGameClock().hasTimeExpired(game.getTurn())) {
                             game.stopClock();
@@ -257,15 +258,16 @@ public class GameController {
 
                         chessBoard.updateSingleSquare(from);
                         chessBoard.updateSingleSquare(to);
-                        
-                        // For en passant captures, also update the square where the captured pawn was removed
-                        if (movedPiece.getType() == PieceType.PAWN && capturedPiece != null && 
-                            capturedPiece.getType() == PieceType.PAWN) {
-                            // Check if this was an en passant capture (captured piece is not at the destination)
+
+                        // For en passant captures, also update the square where the captured pawn was
+                        // removed
+                        if (movedPiece.getType() == PieceType.PAWN && capturedPiece != null &&
+                                capturedPiece.getType() == PieceType.PAWN) {
+                            // Check if this was an en passant capture (captured piece is not at the
+                            // destination)
                             Position enPassantCapturedPos = new Position(
-                                movedPiece.getColor() == PieceColor.WHITE ? to.getRow() + 1 : to.getRow() - 1,
-                                to.getCol()
-                            );
+                                    movedPiece.getColor() == PieceColor.WHITE ? to.getRow() + 1 : to.getRow() - 1,
+                                    to.getCol());
                             if (game.getBoard().getPieceAt(enPassantCapturedPos) == null) {
                                 // This was likely an en passant capture, update that square too
                                 chessBoard.updateSingleSquare(enPassantCapturedPos);
@@ -301,7 +303,7 @@ public class GameController {
                             gameView.updateUIFromController();
                             gameView.updateTimers();
                         }
-                        
+
                         // Check if time expired
                         if (game.getGameClock().hasTimeExpired(game.getTurn())) {
                             game.stopClock();
@@ -314,6 +316,7 @@ public class GameController {
                         updateBoardState();
                     }
 
+                    chessBoard.highlightMove(move);
                     isAnimating = false;
                 });
             }
@@ -355,13 +358,13 @@ public class GameController {
     }
 
     private void handleAITurn() {
-        // تخطي منطق الذكاء الاصطناعي في وضع لاعبين واثنين والذكاء الاصطناعي مقابل الذكاء الاصطناعي
+        // تخطي منطق الذكاء الاصطناعي في وضع لاعبين واثنين والذكاء الاصطناعي مقابل
+        // الذكاء الاصطناعي
         if (isTwoPlayerMode || isAIVsAIMode) {
             return;
         }
-        
-        // احصل على أفضل حركة من الذكاء الاصطناعي
-        Move aiMove = game.getBestMove();
+
+        Move aiMove = game.getAIMoveIfAny();
         if (aiMove != null) {
             new Thread(() -> {
                 try {
@@ -502,5 +505,17 @@ public class GameController {
 
     public boolean isAIVsAIMode() {
         return isAIVsAIMode;
+    }
+
+    public void highlightLastMove() {
+        Move lastMove = game.getBoard().getLastMove();
+        if (lastMove != null) {
+            chessBoard.highlightMove(lastMove);
+            statusBar.setStatus("Resaltando último movimiento: " +
+                    positionToChessNotation(lastMove.getFrom()) + " -> " +
+                    positionToChessNotation(lastMove.getTo()));
+        } else {
+            statusBar.setStatus("No hay movimientos para resaltar.");
+        }
     }
 }
