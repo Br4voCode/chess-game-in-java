@@ -41,6 +41,7 @@ public class GameView {
         this.shouldLoadHistory = loadFromHistory;
         initializeComponents(loadFromHistory);
         setupLayout();
+        updateUIFromController(); // Forzar actualización inicial tras montar el layout
 
         // Cargar el historial visual después de que setupLayout haya inicializado
         // movesBox
@@ -125,7 +126,6 @@ public class GameView {
         turnLabel.setStyle("-fx-text-fill: #bbbbbb;");
 
         turnValue = new Label(gameInstance.getTurn() == PieceColor.WHITE ? "White" : "Black");
-
         turnValue.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
 
         // Estado del juego
@@ -221,8 +221,11 @@ public class GameView {
 
     // Métodos para actualizar la UI desde el controlador
     public void updateUIFromController() {
-        updateTurnDisplay(controller.getCurrentTurn());
-        updateGameState(gameInstance.getGameStatus());
+        if (gameInstance != null) {
+            PieceColor currentTurn = gameInstance.getTurn();
+            updateTurnDisplay(currentTurn);
+            updateGameState(gameInstance.getGameStatus());
+        }
     }
 
     private void updateTurnDisplay(PieceColor currentTurn) {

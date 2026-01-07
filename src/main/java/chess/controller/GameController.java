@@ -36,7 +36,7 @@ public class GameController {
 
     public void setGameView(chess.view.GameView gameView) {
         this.gameView = gameView;
-        updateUI();
+        updateUI(); // Sincronizar UI al vincular la vista
     }
 
     public void onSquareClicked(Position position) {
@@ -226,7 +226,7 @@ public class GameController {
                             gameView.addCapturedPiece(pieceSymbol, isWhitePiece);
                             game.clearLastCapturedPiece();
                         }
-                        
+
                         chessBoard.updateSingleSquare(from);
                         chessBoard.updateSingleSquare(to);
 
@@ -356,12 +356,12 @@ public class GameController {
         selectedPosition = null;
         isAnimating = false;
         chessBoard.clearHighlights();
-        
+
         // Clear captured pieces UI
         if (gameView != null) {
             gameView.clearCapturedPieces();
         }
-        
+
         updateUI();
         statusBar.setStatus("New game started. " + game.getTurn() + " to move.");
     }
@@ -381,57 +381,62 @@ public class GameController {
     public PieceColor getCurrentTurn() {
         return game.getTurn();
     }
-    
+
     private boolean isPawnPromotion(Piece piece, Position targetPosition) {
         if (piece == null || piece.getType() != PieceType.PAWN) {
             return false;
         }
-        
+
         // White pawn reaching rank 8 (row 0) or black pawn reaching rank 1 (row 7)
         return (piece.getColor() == PieceColor.WHITE && targetPosition.getRow() == 0) ||
-               (piece.getColor() == PieceColor.BLACK && targetPosition.getRow() == 7);
+                (piece.getColor() == PieceColor.BLACK && targetPosition.getRow() == 7);
     }
-    
+
     private void handlePawnPromotion(Move baseMove) {
         if (isAnimating) {
             return;
         }
-        
+
         Piece pawn = game.getBoard().getPieceAt(baseMove.getFrom());
-        
+
         statusBar.setStatus("¡Promoción del peón! Elige tu pieza...");
-        
+
         // Clear highlights before showing dialog
         chessBoard.clearHighlights();
         selectedPosition = null;
-        
+
         PromotionDialog dialog = new PromotionDialog();
         PieceType selectedPieceType = dialog.showDialog(pawn.getColor());
-        
+
         // Check if user cancelled the promotion
         if (selectedPieceType == null || dialog.wasCancelled()) {
             statusBar.setStatus("Promoción cancelada. " + game.getTurn() + " to move.");
             updateBoardState();
             return;
         }
-        
+
         // Create the promotion piece
         Piece promotionPiece = createPromotionPiece(selectedPieceType, pawn.getColor());
-        
+
         // Create move with promotion
         Move promotionMove = new Move(baseMove.getFrom(), baseMove.getTo(), promotionPiece);
-        
+
         // Execute the move with animation
         executeMoveWithAnimation(promotionMove);
     }
-    
+
     private Piece createPromotionPiece(PieceType type, PieceColor color) {
         switch (type) {
-            case QUEEN: return new Queen(color);
-            case ROOK: return new Rook(color);
-            case BISHOP: return new Bishop(color);
-            case KNIGHT: return new Knight(color);
-            default: return new Queen(color); // Fallback to queen
+            case QUEEN:
+                return new Queen(color);
+            case ROOK:
+                return new Rook(color);
+            case BISHOP:
+                return new Bishop(color);
+            case KNIGHT:
+                return new Knight(color);
+            default:
+                return new Queen(color); // Fallback to queen
         }
     }
 }
