@@ -18,9 +18,19 @@ import java.util.List;
  */
 public class StepHistoryStore {
     private final String filePath;
+    private GameMetadata gameMetadata;
 
     public StepHistoryStore(String filePath) {
         this.filePath = filePath;
+        this.gameMetadata = null;
+    }
+
+    public void setGameMetadata(GameMetadata metadata) {
+        this.gameMetadata = metadata;
+    }
+
+    public GameMetadata getGameMetadata() {
+        return gameMetadata;
     }
 
     public String getFilePath() {
@@ -30,6 +40,7 @@ public class StepHistoryStore {
     public void saveApplied(StepHistory history) {
         List<Step> applied = history != null ? new ArrayList<>(history.getAppliedSteps()) : new ArrayList<>();
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
+            oos.writeObject(gameMetadata);
             oos.writeObject(applied);
         } catch (IOException e) {
             System.err.println("Error al guardar el historial de steps: " + e.getMessage());
@@ -44,9 +55,24 @@ public class StepHistoryStore {
         }
 
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
-            @SuppressWarnings("unchecked")
-            List<Step> loaded = (List<Step>) ois.readObject();
-            return loaded != null ? loaded : new ArrayList<>();
+            Object first = ois.readObject();
+            
+            if (first instanceof GameMetadata) {
+                // New format: metadata + list
+                gameMetadata = (GameMetadata) first;
+                @SuppressWarnings("unchecked")
+                List<Step> loaded = (List<Step>) ois.readObject();
+                return loaded != null ? loaded : new ArrayList<>();
+            } else if (first instanceof List) {
+                // Old format: just list (backward compatibility)
+                gameMetadata = null;
+                @SuppressWarnings("unchecked")
+                List<Step> loaded = (List<Step>) first;
+                return loaded != null ? loaded : new ArrayList<>();
+            } else {
+                System.err.println("Formato de archivo desconocido");
+                return new ArrayList<>();
+            }
         } catch (IOException | ClassNotFoundException e) {
             System.err.println("Error al cargar el historial de steps: " + e.getMessage());
             e.printStackTrace();
