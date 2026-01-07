@@ -1,9 +1,14 @@
 package chess.model;
 
-import chess.model.pieces.*;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import chess.model.pieces.Bishop;
+import chess.model.pieces.King;
+import chess.model.pieces.Knight;
+import chess.model.pieces.Pawn;
+import chess.model.pieces.Queen;
+import chess.model.pieces.Rook;
 
 public class Board {
     private Piece[][] grid = new Piece[8][8];

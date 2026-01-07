@@ -11,7 +11,10 @@ import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.TranslateTransition;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 
@@ -34,10 +37,26 @@ public class ChessBoard {
 		board = new GridPane();
 		squares = new ChessSquare[8][8];
 
-		board.setMaxSize(480, 480);
-		board.setMinSize(480, 480);
-		boardContainer.setMaxSize(480, 480);
-		boardContainer.setMinSize(480, 480);
+		// Make board responsive - remove fixed size
+		board.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+		boardContainer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+
+		// Ensure grid distributes space evenly (8x8)
+		board.getColumnConstraints().clear();
+		board.getRowConstraints().clear();
+		for (int i = 0; i < 8; i++) {
+			ColumnConstraints cc = new ColumnConstraints();
+			cc.setPercentWidth(12.5);
+			cc.setHgrow(Priority.ALWAYS);
+			cc.setFillWidth(true);
+			board.getColumnConstraints().add(cc);
+
+			RowConstraints rc = new RowConstraints();
+			rc.setPercentHeight(12.5);
+			rc.setVgrow(Priority.ALWAYS);
+			rc.setFillHeight(true);
+			board.getRowConstraints().add(rc);
+		}
 
 		for (int row = 0; row < 8; row++) {
 			for (int col = 0; col < 8; col++) {
@@ -52,11 +71,29 @@ public class ChessBoard {
 				});
 
 				squares[row][col] = square;
+				GridPane.setHgrow(square.getRoot(), Priority.ALWAYS);
+				GridPane.setVgrow(square.getRoot(), Priority.ALWAYS);
 				board.add(square.getRoot(), col, row);
 			}
 		}
 
 		boardContainer.getChildren().add(board);
+
+		// Keep board square based on available space
+		boardContainer.widthProperty().addListener((obs, o, n) -> resizeBoardToContainer());
+		boardContainer.heightProperty().addListener((obs, o, n) -> resizeBoardToContainer());
+	}
+
+	private void resizeBoardToContainer() {
+		double w = boardContainer.getWidth();
+		double h = boardContainer.getHeight();
+		if (w <= 0 || h <= 0) {
+			return;
+		}
+		double size = Math.min(w, h);
+		board.setPrefSize(size, size);
+		board.setMinSize(size, size);
+		board.setMaxSize(size, size);
 	}
 
 	public void setSquareClickListener(Consumer<Position> listener) {
@@ -400,11 +437,15 @@ public class ChessBoard {
 	}
 	
 	private javafx.scene.Node createMovingPiece(ChessSquare fromSquare) {
+		double squareSize = Math.min(fromSquare.getRoot().getWidth(), fromSquare.getRoot().getHeight());
+		if (squareSize <= 0) {
+			squareSize = 60.0;
+		}
 		if (fromSquare.isUsingImages() && fromSquare.getPieceImageView().isVisible()) {
 			// Crear una copia del ImageView
 			javafx.scene.image.ImageView copy = new javafx.scene.image.ImageView(fromSquare.getPieceImageView().getImage());
-			copy.setFitWidth(50);
-			copy.setFitHeight(50);
+			copy.setFitWidth(squareSize * 0.82);
+			copy.setFitHeight(squareSize * 0.82);
 			copy.setPreserveRatio(true);
 			return copy;
 		} else if (fromSquare.getPieceLabel().isVisible()) {
@@ -427,11 +468,15 @@ public class ChessBoard {
 	private double[] getSquareCoordinates(ChessSquare square) {
 		// Calcular la posición relativa de la casilla dentro del tablero
 		Position pos = square.getPosition();
-		double squareSize = 60.0; // Tamaño de cada casilla
+		double squareSize = Math.min(square.getRoot().getWidth(), square.getRoot().getHeight());
+		if (squareSize <= 0) {
+			squareSize = 60.0;
+		}
+		double boardSize = squareSize * 8.0;
 		
-		// Calcular offset desde el centro del tablero
-		double boardCenterX = 240.0; // 480/2
-		double boardCenterY = 240.0; // 480/2
+		// Calcular offset desde el centro del tablero (StackPane centra los hijos)
+		double boardCenterX = boardSize / 2.0;
+		double boardCenterY = boardSize / 2.0;
 		
 		double x = (pos.getCol() * squareSize) - boardCenterX + (squareSize / 2);
 		double y = (pos.getRow() * squareSize) - boardCenterY + (squareSize / 2);

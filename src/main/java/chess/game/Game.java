@@ -1,6 +1,7 @@
 package chess.game;
 
 import chess.model.Board;
+import chess.model.GameClock;
 import chess.model.Move;
 import chess.model.MoveHistory;
 import chess.model.Piece;
@@ -17,6 +18,7 @@ public class Game {
     private MoveHistory moveHistory;
     private boolean shouldSaveMoves = true; // Flag para controlar si guardar movimientos
     private Piece lastCapturedPiece = null; // Track the last captured piece
+    private GameClock gameClock; // Clock for tracking player time
 
     public Game(Player white, Player black) {
         this.board = new Board();
@@ -27,6 +29,7 @@ public class Game {
         this.gameResult = null;
         this.moveCount = 0;
         this.moveHistory = new MoveHistory("game_history.dat");
+        this.gameClock = new GameClock(); // Initialize with 5 minutes per player
     }
 
     public Board getBoard() { 
@@ -55,6 +58,15 @@ public class Game {
             return false;
         }
         
+        // Check if time has expired for current player
+        if (gameClock.hasTimeExpired(turn)) {
+            gameOver = true;
+            PieceColor winner = (turn == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
+            gameResult = winner + " wins! " + turn + " ran out of time!";
+            gameClock.stop();
+            return false;
+        }
+        
         // Check if it's the correct player's turn
         Piece movingPiece = board.getPieceAt(m.getFrom());
         if (movingPiece == null || movingPiece.getColor() != turn) {
@@ -68,8 +80,13 @@ public class Game {
         
         // Apply the move and track captured piece
         lastCapturedPiece = board.movePiece(m);
+        // Apply the move
+        board.movePiece(m);
         turn = turn.opposite();
         moveCount++;
+        
+        // Update game clock - switch active player
+        gameClock.switchPlayer();
         
         // Guardar el movimiento en el historial (solo si está habilitado)
         if (shouldSaveMoves) {
@@ -141,6 +158,7 @@ public class Game {
         gameOver = false;
         gameResult = null;
         moveCount = 0;
+        gameClock.reset(); // Reset the clock
         // NO limpiar el historial aquí - solo resets internos
     }
 
@@ -153,6 +171,7 @@ public class Game {
         gameOver = false;
         gameResult = null;
         moveCount = 0;
+        gameClock.reset(); // Reset the clock
         moveHistory.clear();
     }
 
@@ -247,7 +266,6 @@ public class Game {
     public void setShouldSaveMoves(boolean shouldSave) {
         this.shouldSaveMoves = shouldSave;
     }
-
     /**
      * Obtiene la última pieza capturada
      * @return la última pieza capturada, o null si no hubo captura
@@ -261,5 +279,48 @@ public class Game {
      */
     public void clearLastCapturedPiece() {
         lastCapturedPiece = null;
+    }
+    /**
+     * Get the game clock
+     * @return the GameClock instance
+     */
+    public GameClock getGameClock() {
+        return gameClock;
+    }
+
+    /**
+     * Set a custom game clock
+     * @param gameClock the GameClock to use
+     */
+    public void setGameClock(GameClock gameClock) {
+        this.gameClock = gameClock;
+    }
+
+    /**
+     * Start the game clock
+     */
+    public void startClock() {
+        gameClock.start();
+    }
+
+    /**
+     * Stop the game clock
+     */
+    public void stopClock() {
+        gameClock.stop();
+    }
+
+    /**
+     * Pause the game clock
+     */
+    public void pauseClock() {
+        gameClock.pause();
+    }
+
+    /**
+     * Resume the game clock
+     */
+    public void resumeClock() {
+        gameClock.resume();
     }
 }
