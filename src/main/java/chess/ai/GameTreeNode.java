@@ -3,6 +3,7 @@ package chess.ai;
 import chess.model.Board;
 import chess.model.Move;
 import chess.model.PieceColor;
+import chess.rules.RulesEngine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +68,7 @@ public class GameTreeNode {
     public void expand() {
         if (expanded)
             return;
-        List<chess.model.Move> moves = board.getAllPossibleMoves(sideToMove);
+        List<chess.model.Move> moves = RulesEngine.legalMoves(board, sideToMove);
         PieceColor next = sideToMove.opposite();
         for (chess.model.Move m : moves) {
             Board nb = board.copy();

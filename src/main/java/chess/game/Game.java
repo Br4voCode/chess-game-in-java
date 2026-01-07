@@ -3,9 +3,12 @@ package chess.game;
 import chess.model.Board;
 import chess.model.GameClock;
 import chess.model.Move;
-import chess.model.MoveHistory;
 import chess.model.Piece;
 import chess.model.PieceColor;
+import chess.history.Step;
+import chess.history.StepHistory;
+import chess.history.StepHistoryStore;
+import chess.rules.RulesEngine;
 
 public class Game {
     private Board board;
@@ -15,7 +18,8 @@ public class Game {
     private boolean gameOver;
     private String gameResult;
     private int moveCount;
-    private MoveHistory moveHistory;
+    private StepHistory stepHistory;
+    private StepHistoryStore stepHistoryStore;
     private boolean shouldSaveMoves = true; // Flag para controlar si guardar movimientos
     private Piece lastCapturedPiece = null; // Track the last captured piece
     private GameClock gameClock; // Clock for tracking player time
@@ -28,7 +32,8 @@ public class Game {
         this.gameOver = false;
         this.gameResult = null;
         this.moveCount = 0;
-        this.moveHistory = new MoveHistory("game_history.dat");
+        this.stepHistory = new StepHistory();
+        this.stepHistoryStore = new StepHistoryStore("game_history.dat");
         this.gameClock = new GameClock(); // Initialize with 5 minutes per player
     }
 
@@ -38,6 +43,13 @@ public class Game {
 
     public PieceColor getTurn() {
         return turn;
+    }
+
+    /**
+     * Internal setter used by history navigation (undo/redo).
+     */
+    public void setTurn(PieceColor turn) {
+        this.turn = turn;
     }
 
     public boolean isGameOver() {
@@ -50,6 +62,21 @@ public class Game {
 
     public int getMoveCount() {
         return moveCount;
+    }
+
+    /**
+     * Internal setter used by history navigation (undo/redo).
+     */
+    public void setMoveCount(int moveCount) {
+        this.moveCount = Math.max(0, moveCount);
+    }
+
+    /**
+     * Clears game-over state when navigating history.
+     */
+    public void clearGameOverState() {
+        this.gameOver = false;
+        this.gameResult = null;
     }
 
     public boolean applyMove(Move m) {
@@ -78,19 +105,25 @@ public class Game {
             return false;
         }
 
-        // Apply the move and track captured piece
-        lastCapturedPiece = board.movePiece(m);
-        // Apply the move
-        board.movePiece(m);
+    // Capture board state needed for deterministic undo/redo
+    chess.model.Position enPassantBefore = board.getEnPassantTarget();
+    Piece moverBefore = board.getPieceAt(m.getFrom());
+
+    // Apply the move and track captured piece
+    lastCapturedPiece = board.movePiece(m);
+
+    chess.model.Position enPassantAfter = board.getEnPassantTarget();
         turn = turn.opposite();
         moveCount++;
 
         // Update game clock - switch active player
         gameClock.switchPlayer();
 
-        // Guardar el movimiento en el historial (solo si está habilitado)
+        // Guardar el step en el historial (solo si está habilitado)
         if (shouldSaveMoves) {
-            moveHistory.addMove(m);
+            Step step = buildStepForAppliedMove(m, moverBefore, lastCapturedPiece, enPassantBefore, enPassantAfter);
+            stepHistory.recordApplied(step);
+            stepHistoryStore.saveApplied(stepHistory);
         }
 
         // Check game state after move
@@ -99,9 +132,97 @@ public class Game {
         return true;
     }
 
+    private Step buildStepForAppliedMove(Move move,
+            Piece moverBefore,
+            Piece capturedPiece,
+            chess.model.Position enPassantBefore,
+            chess.model.Position enPassantAfter) {
+        Piece moverAfter = board.getPieceAt(move.getTo());
+        PieceColor moverColor = moverAfter != null ? moverAfter.getColor() : turn.opposite(); // best-effort
+        chess.model.PieceType moverType = moverAfter != null ? moverAfter.getType() : null;
+
+        // IMPORTANT: must match the existing UI format exactly
+        // Examples: "e2-e4" or "O-O" / "O-O-O" (castling is handled by the controller UI,
+        // but we keep generic notation here).
+        String displayText = toChessNotation(move.getFrom()) + "-" + toChessNotation(move.getTo());
+
+        // Special cases
+        boolean castling = moverBefore != null && moverBefore.getType() == chess.model.PieceType.KING &&
+                move.getFrom().getRow() == move.getTo().getRow() &&
+                Math.abs(move.getFrom().getCol() - move.getTo().getCol()) == 2;
+
+        chess.model.Position rookFrom = null;
+        chess.model.Position rookTo = null;
+        Boolean rookHadMovedBefore = null;
+        if (castling) {
+            int row = move.getFrom().getRow();
+            if (move.getTo().getCol() > move.getFrom().getCol()) {
+                rookFrom = new chess.model.Position(row, 7);
+                rookTo = new chess.model.Position(row, 5);
+            } else {
+                rookFrom = new chess.model.Position(row, 0);
+                rookTo = new chess.model.Position(row, 3);
+            }
+            Piece rookBefore = board.getPieceAt(rookTo); // after move, rook is already on rookTo
+            if (rookBefore instanceof chess.model.pieces.Rook) {
+                // We don't have rook "before" snapshot here; best effort is to assume false.
+                // We'll compute the true "before" in controller when we build the step from MoveResult.
+                rookHadMovedBefore = ((chess.model.pieces.Rook) rookBefore).hasMovedFromStart();
+            }
+        }
+
+        boolean enPassant = moverBefore != null && moverBefore.getType() == chess.model.PieceType.PAWN &&
+                enPassantBefore != null && move.getTo().equals(enPassantBefore) &&
+                capturedPiece != null && capturedPiece.getType() == chess.model.PieceType.PAWN;
+        chess.model.Position enPassantCapturedPawnPos = null;
+        if (enPassant) {
+            enPassantCapturedPawnPos = new chess.model.Position(
+                    moverBefore.getColor() == PieceColor.WHITE ? move.getTo().getRow() + 1 : move.getTo().getRow() - 1,
+                    move.getTo().getCol());
+        }
+
+        boolean promotion = moverBefore != null && moverBefore.getType() == chess.model.PieceType.PAWN &&
+                moverAfter != null && moverAfter.getType() != chess.model.PieceType.PAWN;
+
+        Piece promotedTo = promotion ? moverAfter : null;
+        Piece originalPawn = promotion ? moverBefore : null;
+
+        Boolean moverHadMovedBefore = null;
+        if (moverBefore instanceof chess.model.pieces.King) {
+            moverHadMovedBefore = ((chess.model.pieces.King) moverBefore).hasMovedFromStart();
+        } else if (moverBefore instanceof chess.model.pieces.Rook) {
+            moverHadMovedBefore = ((chess.model.pieces.Rook) moverBefore).hasMovedFromStart();
+        }
+
+        return new Step(
+                move,
+                moverColor,
+                moverType,
+                displayText,
+                capturedPiece,
+                castling,
+                rookFrom,
+                rookTo,
+                rookHadMovedBefore,
+                enPassant,
+                enPassantCapturedPawnPos,
+                promotion,
+                promotedTo,
+                originalPawn,
+                moverHadMovedBefore,
+                enPassantBefore,
+                enPassantAfter);
+    }
+
+    private String toChessNotation(chess.model.Position pos) {
+        char file = (char) ('a' + pos.getCol());
+        int rank = 8 - pos.getRow();
+        return "" + file + rank;
+    }
+
     private boolean isMoveLegal(Move m) {
-        // Get all legal moves for current player
-        java.util.List<Move> legalMoves = board.getAllPossibleMoves(turn);
+        // Centralized query for legal moves
+        java.util.List<Move> legalMoves = RulesEngine.legalMoves(board, turn);
 
         // Check if the move is in the list of legal moves
         for (Move legalMove : legalMoves) {
@@ -114,26 +235,11 @@ public class Game {
     }
 
     private void checkGameState() {
-        // Check for checkmate
-        if (board.isCheckmate(turn)) {
+        // Centralized evaluation (keeps Game small; delegates to Board's existing rule methods)
+        String result = RulesEngine.evaluateGameResult(board, turn);
+        if (result != null) {
             gameOver = true;
-            PieceColor winner = (turn == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
-            gameResult = "Checkmate! " + winner + " wins!";
-            return;
-        }
-
-        // Check for stalemate
-        if (board.isStalemate(turn)) {
-            gameOver = true;
-            gameResult = "Stalemate! Game drawn.";
-            return;
-        }
-
-        // Check for insufficient material
-        if (board.isInsufficientMaterial()) {
-            gameOver = true;
-            gameResult = "Draw by insufficient material.";
-            return;
+            gameResult = result;
         }
 
         // Optional: Check for 50-move rule
@@ -178,7 +284,8 @@ public class Game {
         gameResult = null;
         moveCount = 0;
         gameClock.reset(); // Reset the clock
-        moveHistory.clear();
+        stepHistory.clear();
+        stepHistoryStore.saveApplied(stepHistory);
     }
 
     public boolean undoLastMove() {
@@ -199,15 +306,15 @@ public class Game {
     }
 
     public boolean isKingInCheck(PieceColor color) {
-        return board.isKingInCheck(color);
+        return RulesEngine.isInCheck(board, color);
     }
 
     public boolean isCheckmate(PieceColor color) {
-        return board.isCheckmate(color);
+        return RulesEngine.isCheckmate(board, color);
     }
 
     public boolean isStalemate(PieceColor color) {
-        return board.isStalemate(color);
+        return RulesEngine.isStalemate(board, color);
     }
 
     public boolean isInsufficientMaterial() {
@@ -219,7 +326,7 @@ public class Game {
             return gameResult;
         }
 
-        if (board.isKingInCheck(turn)) {
+        if (RulesEngine.isInCheck(board, turn)) {
             return turn + " is in check";
         }
 
@@ -249,13 +356,12 @@ public class Game {
         return copy;
     }
 
-    /**
-     * Obtiene el historial de movimientos de la partida
-     * 
-     * @return el objeto MoveHistory
-     */
-    public MoveHistory getMoveHistory() {
-        return moveHistory;
+    public StepHistory getStepHistory() {
+        return stepHistory;
+    }
+
+    public StepHistoryStore getStepHistoryStore() {
+        return stepHistoryStore;
     }
 
     /**
@@ -265,7 +371,7 @@ public class Game {
      * @param filePath la ruta del archivo .dat
      */
     public void setMoveHistoryPath(String filePath) {
-        this.moveHistory = new MoveHistory(filePath);
+        this.stepHistoryStore = new StepHistoryStore(filePath);
     }
 
     /**

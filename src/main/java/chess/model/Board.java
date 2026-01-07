@@ -432,6 +432,13 @@ public class Board {
     }
 
     /**
+     * Sets en passant target square (used by history undo/redo).
+     */
+    public void setEnPassantTarget(Position target) {
+        this.enPassantTarget = target;
+    }
+
+    /**
      * Check if a position is under attack by the given color
      */
     public boolean isSquareUnderAttack(Position position, PieceColor attackerColor) {

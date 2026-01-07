@@ -2,7 +2,7 @@ package chess.view;
 
 import java.io.File;
 
-import chess.model.MoveHistory;
+import chess.history.StepHistoryStore;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -139,10 +139,9 @@ public class StartScreen {
         Label infoLabel = new Label();
         infoLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #888888; -fx-wrap-text: true;");
         if (gameExists) {
-            MoveHistory history = new MoveHistory(HISTORY_FILE);
-            if (history.loadFromFile()) {
-                infoLabel.setText("Found a saved game with " + history.getMoveCount() + " moves");
-            }
+            StepHistoryStore store = new StepHistoryStore(HISTORY_FILE);
+            int moveCount = store.loadApplied().size();
+            infoLabel.setText("Found a saved game with " + moveCount + " moves");
         } else {
             infoLabel.setText("No saved game found");
         }
