@@ -29,14 +29,23 @@ public class GameView {
     private VBox whiteCapturedBox;
     private VBox blackCapturedBox;
     private VBox movesBox;
+    
+    private Game gameInstance;
+    private boolean shouldLoadHistory;
 
     public GameView() {
         this(false);
     }
 
     public GameView(boolean loadFromHistory) {
+        this.shouldLoadHistory = loadFromHistory;
         initializeComponents(loadFromHistory);
         setupLayout();
+        
+        // Cargar el historial visual después de que setupLayout haya inicializado movesBox
+        if (shouldLoadHistory && gameInstance != null && StartScreen.hasGameHistory()) {
+            loadMoveHistoryToUI(gameInstance.getMoveHistory());
+        }
     }
 
     private void initializeComponents(boolean loadFromHistory) {
@@ -54,9 +63,11 @@ public class GameView {
             game = new Game(new HumanPlayer(), new AIPlayer(PieceColor.BLACK, 3));
         }
         
+        this.gameInstance = game;
         this.chessBoard = new ChessBoard();
         this.statusBar = new StatusBar();
         this.controller = new GameController(game, chessBoard, statusBar);
+        this.controller.setGameView(this);
         
         this.chessBoard.setSquareClickListener(controller::onSquareClicked);
         
@@ -249,6 +260,45 @@ public class GameView {
             if (movesBox.getChildren().size() > 10) {
                 movesBox.getChildren().remove(0);
             }
+        }
+    }
+    
+    public void addMoveToHistoryWithColor(String moveNotation, chess.model.PieceColor color) {
+        if (movesBox != null) {
+            String icon = (color == chess.model.PieceColor.WHITE) ? "♟" : "♙";
+            
+            Label moveLabel = new Label(icon + " " + moveNotation);
+            moveLabel.setStyle("-fx-text-fill: white;");
+            movesBox.getChildren().add(moveLabel);
+            
+            // Limitar a últimos 10 movimientos
+            if (movesBox.getChildren().size() > 10) {
+                movesBox.getChildren().remove(0);
+            }
+        }
+    }
+    
+    private void loadMoveHistoryToUI(chess.model.MoveHistory history) {
+        java.util.List<chess.model.Move> moves = history.getMoves();
+        
+        for (int i = 0; i < moves.size(); i++) {
+            chess.model.Move move = moves.get(i);
+            chess.model.Position from = move.getFrom();
+            chess.model.Position to = move.getTo();
+            
+            char fromFile = (char) ('a' + from.getCol());
+            int fromRank = 8 - from.getRow();
+            char toFile = (char) ('a' + to.getCol());
+            int toRank = 8 - to.getRow();
+            
+            String moveNotation = fromFile + "" + fromRank + "-" + toFile + "" + toRank;
+            
+            // Determinar el color: índices pares son blancos, impares son negros
+            chess.model.PieceColor color = (i % 2 == 0) ? 
+                                           chess.model.PieceColor.WHITE : 
+                                           chess.model.PieceColor.BLACK;
+            
+            addMoveToHistoryWithColor(moveNotation, color);
         }
     }
 }

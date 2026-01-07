@@ -8,6 +8,7 @@ import chess.model.Board;
 import chess.model.Move;
 import chess.model.Piece;
 import chess.model.PieceColor;
+import chess.model.PieceType;
 import chess.model.Position;
 import chess.view.ChessBoard;
 import chess.view.components.StatusBar;
@@ -21,6 +22,7 @@ public class GameController {
     private Game game;
     private ChessBoard chessBoard;
     private StatusBar statusBar;
+    private chess.view.GameView gameView;
     private Position selectedPosition;
     private boolean isAnimating = false;
 
@@ -28,10 +30,15 @@ public class GameController {
         this.game = game;
         this.chessBoard = chessBoard;
         this.statusBar = statusBar;
+        this.gameView = null;
         this.selectedPosition = null;
         
         chessBoard.setCurrentBoard(game.getBoard());
         updateUI();
+    }
+
+    public void setGameView(chess.view.GameView gameView) {
+        this.gameView = gameView;
     }
 
     public void onSquareClicked(Position position) {
@@ -184,6 +191,12 @@ public class GameController {
                         statusBar.setStatus("Move: " + moveDescription + ". " + 
                                           game.getTurn() + " to move.");
                         
+                        // Agregar el movimiento al historial visual
+                        String moveNotation = "O-" + (to.getCol() > from.getCol() ? "O" : "O-O");
+                        if (gameView != null) {
+                            gameView.addMoveToHistoryWithColor(moveNotation, movedPiece.getColor());
+                        }
+                        
                         handleAITurn();
                     } else {
                         statusBar.setStatus("Move failed. " + game.getTurn() + " to move.");
@@ -220,6 +233,12 @@ public class GameController {
                         
                         statusBar.setStatus("Move: " + moveDescription + ". " + 
                                           game.getTurn() + " to move.");
+                        
+                        // Agregar el movimiento al historial visual
+                        String moveNotation = positionToChessNotation(from) + "-" + positionToChessNotation(to);
+                        if (gameView != null) {
+                            gameView.addMoveToHistoryWithColor(moveNotation, movedPiece.getColor());
+                        }
                         
                         handleAITurn();
                     } else {
