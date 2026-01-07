@@ -46,8 +46,10 @@ public class ChessSquare {
 	// Estado
 	private boolean isSelected = false;
 	private boolean useImages = true; // Siempre usar imágenes
-	private String pieceSet = "classic";
 	private String currentPieceSymbol = "";
+
+	/** Logs visuales muy ruidosos (no activar en producción). */
+	private static final boolean DEBUG_IMAGES = false;
 
 	public ChessSquare(Position position) {
 		this.position = position;
@@ -177,14 +179,14 @@ public class ChessSquare {
 
 	public void updateAppearance(String pieceSymbol, boolean isSelected,
 			boolean isPossibleMove, boolean isCaptureMove) {
+		String nextSymbol = (pieceSymbol == null) ? "" : pieceSymbol;
+		boolean pieceChanged = !currentPieceSymbol.equals(nextSymbol);
+		currentPieceSymbol = nextSymbol;
 
-		// Guardar el símbolo de la pieza
-		if (pieceSymbol != null) {
-			currentPieceSymbol = pieceSymbol;
+		// Solo actualizar imagen si cambió la pieza (reduce decodificación y GC)
+		if (pieceChanged) {
+			updatePieceRepresentation(nextSymbol);
 		}
-
-		// Actualizar pieza PRIMERO
-		updatePieceRepresentation(pieceSymbol);
 
 		// Manejar selección y movimientos
 		handleSelection(isSelected);
@@ -203,6 +205,7 @@ public class ChessSquare {
 
 		if (pieceSymbol == null || pieceSymbol.isEmpty()) {
 			pieceImageView.setVisible(false);
+			pieceImageView.setImage(null);
 		} else {
 			pieceImageView.setVisible(true);
 			loadPieceImage(pieceSymbol);
@@ -210,64 +213,20 @@ public class ChessSquare {
 	}
 
 	private void loadPieceImage(String pieceSymbol) {
-		String imageName = getImageName(pieceSymbol);
-		String imagePath = String.format("/images/pieces/%s/%s.png", pieceSet, imageName);
-
-		// Debug: imprimir información
-		System.out.println("DEBUG: Cargando pieza - Símbolo: '" + pieceSymbol + "' -> Imagen: '" + imageName
-				+ "' -> Ruta: '" + imagePath + "'");
-
-		try {
-			Image image = new Image(getClass().getResourceAsStream(imagePath));
-			if (image.isError()) {
-				System.err.println("ERROR: Imagen con error: " + imagePath);
-				pieceImageView.setVisible(false);
-			} else {
-				pieceImageView.setImage(image);
-				System.out.println("SUCCESS: Imagen cargada correctamente: " + imagePath);
+		// Usar cache central (evita recrear Image por casilla / por update)
+		Image image = PieceImageLoader.loadPieceImageRaw(pieceSymbol);
+		if (image == null || image.isError()) {
+			if (DEBUG_IMAGES) {
+				System.err.println("Image load failed for symbol: '" + pieceSymbol + "'");
 			}
-		} catch (Exception e) {
-			System.err.println("EXCEPTION: Error cargando imagen: " + imagePath + " - " + e.getMessage());
 			pieceImageView.setVisible(false);
+			pieceImageView.setImage(null);
+			return;
 		}
+
+		pieceImageView.setImage(image);
 	}
 
-	private String getImageName(String pieceSymbol) {
-		// Map Unicode chess symbols to image file names
-		switch (pieceSymbol) {
-			// White pieces (Unicode symbols)
-			case "♔":
-				return "white_king";
-			case "♕":
-				return "white_queen";
-			case "♖":
-				return "white_rook";
-			case "♗":
-				return "white_bishop";
-			case "♘":
-				return "white_knight";
-			case "♙":
-				return "white_pawn";
-
-			// Black pieces (Unicode symbols)
-			case "♚":
-				return "black_king";
-			case "♛":
-				return "black_queen";
-			case "♜":
-				return "black_rook";
-			case "♝":
-				return "black_bishop";
-			case "♞":
-				return "black_knight";
-			case "♟":
-				return "black_pawn";
-
-			default:
-				System.err.println("WARN: Unknown piece symbol: '" + pieceSymbol + "'");
-				return "white_pawn"; // Fallback
-		}
-	}
 
 	private void handleSelection(boolean shouldBeSelected) {
 		if (this.isSelected != shouldBeSelected) {
@@ -399,21 +358,7 @@ public class ChessSquare {
 		}
 	}
 
-	private void stopPiecePulse() {
-		if (piecePulseAnimation != null) {
-			piecePulseAnimation.stop();
-		}
-
-		// Restaurar escala inmediatamente
-		if (pieceImageView != null && pieceImageView.isVisible()) {
-			pieceImageView.setScaleX(1.0);
-			pieceImageView.setScaleY(1.0);
-		}
-		if (pieceLabel != null && pieceLabel.isVisible()) {
-			pieceLabel.setScaleX(1.0);
-			pieceLabel.setScaleY(1.0);
-		}
-	}
+	// stopPiecePulse eliminado (no se usaba). La limpieza de escala se hace en stopAllAnimations().
 
 	private void handlePossibleMoves(boolean isPossibleMove, boolean isCaptureMove) {
 		if (isPossibleMove) {
@@ -578,7 +523,7 @@ public class ChessSquare {
 	}
 
 	public String getPieceSymbol() {
-		return pieceLabel.getText();
+		return currentPieceSymbol;
 	}
 
 	public ImageView getPieceImageView() {
@@ -600,12 +545,7 @@ public class ChessSquare {
 		}
 	}
 
-	public void setPieceSet(String pieceSet) {
-		this.pieceSet = pieceSet;
-		if (useImages && !currentPieceSymbol.isEmpty()) {
-			loadPieceImage(currentPieceSymbol);
-		}
-	}
+	// setPieceSet eliminado: el set actual es fijo (classic) y el mapping vive en PieceImageLoader
 
 	public void setOnMouseClicked(javafx.event.EventHandler<javafx.scene.input.MouseEvent> handler) {
 		root.setOnMouseClicked(handler);

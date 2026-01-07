@@ -12,6 +12,8 @@ import java.util.List;
  */
 public class GameReconstructor {
 
+    private static final boolean DEBUG = false;
+
     /**
      * Reconstruye una partida a partir del historial guardado
      * @param historyFile ruta del archivo .dat con el historial
@@ -26,17 +28,28 @@ public class GameReconstructor {
         StepHistoryStore store = game.getStepHistoryStore();
         List<Step> steps = store.loadApplied();
 
+        // Cargar el historial en memoria (base para undo/redo). Importante: esto NO debe
+        // escribir el archivo; solo inicializa el estado.
+        if (game.getStepHistory() != null) {
+            game.getStepHistory().loadAppliedSteps(steps);
+        }
+
         if (steps.isEmpty()) {
-            System.out.println("El historial está vacío. Iniciando nueva partida.");
+            if (DEBUG) {
+                System.out.println("El historial está vacío. Iniciando nueva partida.");
+            }
             game.setShouldSaveMoves(true);
             return game;
         }
 
-    // Desactivar guardado durante la reconstrucción
+        // Desactivar guardado durante la reconstrucción (no queremos reescribir el archivo
+        // mientras aplicamos los movimientos ya persistidos)
         game.setShouldSaveMoves(false);
 
         // Aplicar todos los movimientos al tablero
-        System.out.println("Reconstruyendo partida con " + steps.size() + " movimientos...");
+        if (DEBUG) {
+            System.out.println("Reconstruyendo partida con " + steps.size() + " movimientos...");
+        }
         int movesApplied = 0;
 
         for (Step step : steps) {
@@ -49,17 +62,27 @@ public class GameReconstructor {
                 game.applyMove(move);
                 movesApplied++;
             } else {
-                System.err.println("Error: No se encontró pieza en " + move.getFrom());
+                if (DEBUG) {
+                    System.err.println("Error: No se encontró pieza en " + move.getFrom());
+                }
                 break;
             }
         }
 
-        // Reactivar el guardado para nuevos movimientos
-        // NO limpiar el historial aquí, queremos que los nuevos movimientos se agreguen
+    // Fijar contadores coherentes con el historial cargado
+    game.setMoveCount(movesApplied);
+    // Por convenio: si hay número impar de jugadas aplicadas, le toca al negro;
+    // si es par, le toca al blanco.
+    game.setTurn((movesApplied % 2 == 0) ? chess.model.PieceColor.WHITE : chess.model.PieceColor.BLACK);
+
+    // Reactivar el guardado para nuevos movimientos.
+    // NO limpiar el historial: queremos poder seguir jugando y usar undo/redo.
         game.setShouldSaveMoves(true);
 
-        System.out.println("Partida reconstruida: " + movesApplied + " movimientos aplicados.");
-        System.out.println("Listo para continuar la partida.\n");
+        if (DEBUG) {
+            System.out.println("Partida reconstruida: " + movesApplied + " movimientos aplicados.");
+            System.out.println("Listo para continuar la partida.\n");
+        }
         return game;
     }
 
