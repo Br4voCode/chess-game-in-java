@@ -29,7 +29,6 @@ public class ChessSquare {
 	private ImageView pieceImageView;
 	private Position position;
 
-	// Colores originales
 	private final Color LIGHT_COLOR = Color.rgb(240, 217, 181);
 	private final Color DARK_COLOR = Color.rgb(181, 136, 99);
 	private final Color SELECTION_GLOW_COLOR = Color.rgb(144, 238, 144, 0.5);
@@ -39,13 +38,11 @@ public class ChessSquare {
 	private final Color MOVE_HIGHLIGHT_COLOR = Color.rgb(255, 255, 0, 0.4);
 	private final Color HINT_HIGHLIGHT_COLOR = Color.rgb(0, 255, 255, 0.4);
 
-	// Efectos
 	private InnerShadow innerGlow;
 	private ScaleTransition piecePulseAnimation;
 
-	// Estado
 	private boolean isSelected = false;
-	private boolean useImages = true; // Siempre usar imágenes
+	private boolean useImages = true;
 	private String currentPieceSymbol = "";
 
 	/** Logs visuales muy ruidosos (no activar en producción). */
@@ -62,7 +59,6 @@ public class ChessSquare {
 		root.setMinSize(1, 1);
 		root.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
-		// Fondo de la casilla
 		background = new Rectangle();
 		background.widthProperty().bind(root.widthProperty());
 		background.heightProperty().bind(root.heightProperty());
@@ -73,7 +69,6 @@ public class ChessSquare {
 						root.heightProperty()));
 		background.arcHeightProperty().bind(background.arcWidthProperty());
 
-		// Capa de selección (inicialmente invisible)
 		selectionOverlay = new Rectangle();
 		selectionOverlay.widthProperty().bind(root.widthProperty());
 		selectionOverlay.heightProperty().bind(root.heightProperty());
@@ -82,7 +77,6 @@ public class ChessSquare {
 		selectionOverlay.setFill(Color.TRANSPARENT);
 		selectionOverlay.setVisible(false);
 
-		// Indicador de movimiento posible
 		possibleMoveIndicator = new Circle();
 		possibleMoveIndicator.radiusProperty().bind(
 				Bindings.createDoubleBinding(
@@ -93,7 +87,6 @@ public class ChessSquare {
 		possibleMoveIndicator.setVisible(false);
 		possibleMoveIndicator.setOpacity(0);
 
-		// Indicador de captura
 		captureIndicator = new Circle();
 		captureIndicator.radiusProperty().bind(
 				Bindings.createDoubleBinding(
@@ -112,13 +105,11 @@ public class ChessSquare {
 		captureIndicator.setScaleX(0);
 		captureIndicator.setScaleY(0);
 
-		// Label para texto
 		pieceLabel = new Label();
 		pieceLabel.setStyle("-fx-font-size: 28; -fx-font-weight: bold;");
 		root.widthProperty().addListener((obs, oldV, newV) -> updatePieceSizing());
 		root.heightProperty().addListener((obs, oldV, newV) -> updatePieceSizing());
 
-		// ImageView para piezas con imágenes
 		pieceImageView = new ImageView();
 		pieceImageView.fitWidthProperty().bind(
 				Bindings.createDoubleBinding(
@@ -129,7 +120,6 @@ public class ChessSquare {
 		pieceImageView.setPreserveRatio(true);
 		pieceImageView.setVisible(false);
 
-		// Orden de renderizado: fondo, overlay, indicadores, pieza
 		root.getChildren().addAll(
 				background,
 				selectionOverlay,
@@ -152,13 +142,12 @@ public class ChessSquare {
 	}
 
 	private void setupEffectsAndAnimations() {
-		// InnerShadow para el efecto de glow interior
+
 		innerGlow = new InnerShadow();
 		innerGlow.setColor(SELECTION_GLOW_COLOR);
 		innerGlow.setRadius(25);
 		innerGlow.setChoke(0.5);
 
-		// Animación de pulso para la pieza
 		piecePulseAnimation = new ScaleTransition(Duration.millis(800));
 		piecePulseAnimation.setCycleCount(ScaleTransition.INDEFINITE);
 		piecePulseAnimation.setAutoReverse(true);
@@ -183,24 +172,20 @@ public class ChessSquare {
 		boolean pieceChanged = !currentPieceSymbol.equals(nextSymbol);
 		currentPieceSymbol = nextSymbol;
 
-		// Solo actualizar imagen si cambió la pieza (reduce decodificación y GC)
 		if (pieceChanged) {
 			updatePieceRepresentation(nextSymbol);
 		}
 
-		// Manejar selección y movimientos
 		handleSelection(isSelected);
 		handlePossibleMoves(isPossibleMove, isCaptureMove);
 
-		// Solo restaurar color base si NO está seleccionada y NO es movimiento posible
-		// (incluyendo capturas). Si hay highlight activo, no resetear el fondo.
 		if (!isSelected && !isPossibleMove && !isCaptureMove) {
 			updateBaseColor();
 		}
 	}
 
 	private void updatePieceRepresentation(String pieceSymbol) {
-		// Siempre ocultar el label de texto
+
 		pieceLabel.setVisible(false);
 
 		if (pieceSymbol == null || pieceSymbol.isEmpty()) {
@@ -213,7 +198,7 @@ public class ChessSquare {
 	}
 
 	private void loadPieceImage(String pieceSymbol) {
-		// Usar cache central (evita recrear Image por casilla / por update)
+
 		Image image = PieceImageLoader.loadPieceImageRaw(pieceSymbol);
 		if (image == null || image.isError()) {
 			if (DEBUG_IMAGES) {
@@ -226,7 +211,6 @@ public class ChessSquare {
 
 		pieceImageView.setImage(image);
 	}
-
 
 	private void handleSelection(boolean shouldBeSelected) {
 		if (this.isSelected != shouldBeSelected) {
@@ -265,22 +249,18 @@ public class ChessSquare {
 	}
 
 	private void deselectSquare() {
-		// 1. Detener TODAS las animaciones inmediatamente
+
 		stopAllAnimations();
 
-		// 2. Cancelar transiciones pendientes
 		cancelPendingTransitions();
 
-		// 3. Limpiar efectos visuales inmediatamente
 		background.setEffect(null);
 
-		// 4. Restaurar color base SIN animación (inmediato)
 		Color baseColor = (position.getRow() + position.getCol()) % 2 == 0 ? LIGHT_COLOR : DARK_COLOR;
 		background.setFill(baseColor);
 
-		// 5. Ocultar overlay con fade out rápido
 		if (selectionOverlay != null && selectionOverlay.isVisible()) {
-			// Cancelar animaciones previas
+
 			FadeTransition previousFade = (FadeTransition) selectionOverlay.getProperties().get("currentFade");
 			if (previousFade != null) {
 				previousFade.stop();
@@ -303,7 +283,6 @@ public class ChessSquare {
 			selectionOverlay.setFill(Color.TRANSPARENT);
 		}
 
-		// 6. Asegurar que las piezas no tengan escala residual
 		if (pieceImageView != null) {
 			pieceImageView.setScaleX(1.0);
 			pieceImageView.setScaleY(1.0);
@@ -318,7 +297,7 @@ public class ChessSquare {
 	}
 
 	private void cancelPendingTransitions() {
-		// Cancelar cualquier transición pendiente
+
 		if (possibleMoveIndicator.getProperties().containsKey("currentFade")) {
 			FadeTransition ft = (FadeTransition) possibleMoveIndicator.getProperties().get("currentFade");
 			if (ft != null)
@@ -357,8 +336,6 @@ public class ChessSquare {
 			pause.play();
 		}
 	}
-
-	// stopPiecePulse eliminado (no se usaba). La limpieza de escala se hace en stopAllAnimations().
 
 	private void handlePossibleMoves(boolean isPossibleMove, boolean isCaptureMove) {
 		if (isPossibleMove) {
@@ -423,12 +400,11 @@ public class ChessSquare {
 
 	public void highlightAsMovePart() {
 		javafx.application.Platform.runLater(() -> {
-			// Usar el selectionOverlay para mostrar un tinte amarillo
+
 			selectionOverlay.setFill(MOVE_HIGHLIGHT_COLOR);
 			selectionOverlay.setVisible(true);
 			selectionOverlay.setOpacity(1.0);
 
-			// Opcionalmente, agregar un ligero brillo
 			InnerShadow highlightGlow = new InnerShadow();
 			highlightGlow.setColor(Color.YELLOW);
 			highlightGlow.setRadius(15);
@@ -438,12 +414,11 @@ public class ChessSquare {
 
 	public void highlightAsHint() {
 		javafx.application.Platform.runLater(() -> {
-			// Usar el selectionOverlay para mostrar un tinte cian
+
 			selectionOverlay.setFill(HINT_HIGHLIGHT_COLOR);
 			selectionOverlay.setVisible(true);
 			selectionOverlay.setOpacity(1.0);
 
-			// Agregar un brillo cian
 			InnerShadow hintGlow = new InnerShadow();
 			hintGlow.setColor(Color.CYAN);
 			hintGlow.setRadius(15);
@@ -452,31 +427,26 @@ public class ChessSquare {
 	}
 
 	public void clearHighlight() {
-		// 1. Detener todas las animaciones
+
 		if (piecePulseAnimation != null) {
 			piecePulseAnimation.stop();
 		}
 
-		// 2. Cancelar cualquier transición pendiente
 		cancelPendingTransitions();
 
-		// 3. Restaurar estado inmediatamente
 		isSelected = false;
 
-		// 4. Limpiar efectos visuales INMEDIATAMENTE (sin animaciones)
 		background.setEffect(null);
 		selectionOverlay.setVisible(false);
 		selectionOverlay.setFill(Color.TRANSPARENT);
 		selectionOverlay.setOpacity(1.0);
 
-		// 5. Ocultar indicadores
 		possibleMoveIndicator.setVisible(false);
 		possibleMoveIndicator.setOpacity(0);
 		captureIndicator.setVisible(false);
 		captureIndicator.setScaleX(0);
 		captureIndicator.setScaleY(0);
 
-		// 6. Restaurar escala de piezas
 		if (pieceImageView != null) {
 			pieceImageView.setScaleX(1.0);
 			pieceImageView.setScaleY(1.0);
@@ -489,24 +459,21 @@ public class ChessSquare {
 			pieceLabel.setOpacity(1.0);
 		}
 
-		// 7. Restaurar color base
 		updateBaseColor();
 	}
 
 	private void stopAllAnimations() {
-		// Detener animación de pulso
+
 		if (piecePulseAnimation != null) {
 			piecePulseAnimation.stop();
 		}
 
-		// Detener cualquier transición pendiente en indicadores
 		if (selectionOverlay.getProperties().containsKey("currentFade")) {
 			FadeTransition ft = (FadeTransition) selectionOverlay.getProperties().get("currentFade");
 			if (ft != null)
 				ft.stop();
 		}
 
-		// Restaurar escala inmediatamente
 		if (pieceImageView.isVisible()) {
 			pieceImageView.setScaleX(1.0);
 			pieceImageView.setScaleY(1.0);
@@ -517,7 +484,6 @@ public class ChessSquare {
 		}
 	}
 
-	// Getters y setters importantes para animaciones
 	public javafx.scene.image.Image getPieceImage() {
 		return pieceImageView.getImage();
 	}
@@ -544,8 +510,6 @@ public class ChessSquare {
 			updatePieceRepresentation(currentPieceSymbol);
 		}
 	}
-
-	// setPieceSet eliminado: el set actual es fijo (classic) y el mapping vive en PieceImageLoader
 
 	public void setOnMouseClicked(javafx.event.EventHandler<javafx.scene.input.MouseEvent> handler) {
 		root.setOnMouseClicked(handler);

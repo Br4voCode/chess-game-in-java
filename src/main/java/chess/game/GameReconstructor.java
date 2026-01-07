@@ -16,9 +16,10 @@ public class GameReconstructor {
 
     /**
      * Reconstruye una partida a partir del historial guardado
+     * 
      * @param historyFile ruta del archivo .dat con el historial
-     * @param white jugador blanco
-     * @param black jugador negro
+     * @param white       jugador blanco
+     * @param black       jugador negro
      * @return una partida reconstruida con todos los movimientos aplicados
      */
     public static Game reconstructGameFromHistory(String historyFile, Player white, Player black) {
@@ -28,8 +29,6 @@ public class GameReconstructor {
         StepHistoryStore store = game.getStepHistoryStore();
         List<Step> steps = store.loadApplied();
 
-        // Cargar el historial en memoria (base para undo/redo). Importante: esto NO debe
-        // escribir el archivo; solo inicializa el estado.
         if (game.getStepHistory() != null) {
             game.getStepHistory().loadAppliedSteps(steps);
         }
@@ -42,11 +41,8 @@ public class GameReconstructor {
             return game;
         }
 
-        // Desactivar guardado durante la reconstrucción (no queremos reescribir el archivo
-        // mientras aplicamos los movimientos ya persistidos)
         game.setShouldSaveMoves(false);
 
-        // Aplicar todos los movimientos al tablero
         if (DEBUG) {
             System.out.println("Reconstruyendo partida con " + steps.size() + " movimientos...");
         }
@@ -54,8 +50,7 @@ public class GameReconstructor {
 
         for (Step step : steps) {
             Move move = step.getMove();
-            // Aplicar el movimiento directamente sin validación
-            // (asumimos que el historial contiene solo movimientos válidos)
+
             Board board = game.getBoard();
 
             if (board.getPieceAt(move.getFrom()) != null) {
@@ -69,14 +64,10 @@ public class GameReconstructor {
             }
         }
 
-    // Fijar contadores coherentes con el historial cargado
-    game.setMoveCount(movesApplied);
-    // Por convenio: si hay número impar de jugadas aplicadas, le toca al negro;
-    // si es par, le toca al blanco.
-    game.setTurn((movesApplied % 2 == 0) ? chess.model.PieceColor.WHITE : chess.model.PieceColor.BLACK);
+        game.setMoveCount(movesApplied);
 
-    // Reactivar el guardado para nuevos movimientos.
-    // NO limpiar el historial: queremos poder seguir jugando y usar undo/redo.
+        game.setTurn((movesApplied % 2 == 0) ? chess.model.PieceColor.WHITE : chess.model.PieceColor.BLACK);
+
         game.setShouldSaveMoves(true);
 
         if (DEBUG) {
@@ -88,6 +79,7 @@ public class GameReconstructor {
 
     /**
      * Obtiene información sobre el último juego guardado
+     * 
      * @param historyFile ruta del archivo de historial
      * @return descripción del último juego o null si no existe
      */

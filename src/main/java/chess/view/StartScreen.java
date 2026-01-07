@@ -41,7 +41,6 @@ public class StartScreen {
         root = new BorderPane();
         root.setStyle("-fx-background-color: #2b2b2b;");
 
-        // لوحة مركزية بخيارات اللعبة
         VBox mainPanel = createMainPanel();
         root.setCenter(mainPanel);
     }
@@ -52,50 +51,42 @@ public class StartScreen {
         panel.setPadding(new Insets(50));
         panel.setStyle("-fx-background-color: #2b2b2b;");
 
-        // Título
         Label titleLabel = new Label("♔ CHESS GAME ♚");
         titleLabel.setStyle("-fx-font-size: 48px; -fx-font-weight: bold; -fx-text-fill: white;");
 
-        // Subtítulo
         Label subtitleLabel = new Label("Select an option");
         subtitleLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #bbbbbb;");
 
-        // Botón Nueva Partida (vs AI)
         Button newGameButton = new Button("1 Player (vs AI)");
         newGameButton.setStyle(
                 "-fx-font-size: 18px; " +
-                "-fx-padding: 15px 50px; " +
-                "-fx-background-color: #4caf50; " +
-                "-fx-text-fill: white; " +
-                "-fx-font-weight: bold; " +
-                "-fx-cursor: hand;"
-        );
+                        "-fx-padding: 15px 50px; " +
+                        "-fx-background-color: #4caf50; " +
+                        "-fx-text-fill: white; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-cursor: hand;");
         newGameButton.setMinWidth(250);
         newGameButton.setOnAction(e -> onNewGame.run());
 
-        // Botón Nueva Partida (2 jugadores)
         Button newTwoPlayerGameButton = new Button("2 Players");
         newTwoPlayerGameButton.setStyle(
                 "-fx-font-size: 18px; " +
-                "-fx-padding: 15px 50px; " +
-                "-fx-background-color: #ff9800; " +
-                "-fx-text-fill: white; " +
-                "-fx-font-weight: bold; " +
-                "-fx-cursor: hand;"
-        );
+                        "-fx-padding: 15px 50px; " +
+                        "-fx-background-color: #ff9800; " +
+                        "-fx-text-fill: white; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-cursor: hand;");
         newTwoPlayerGameButton.setMinWidth(250);
         newTwoPlayerGameButton.setOnAction(e -> onNewTwoPlayerGame.run());
 
-        // Botón IA vs IA
         Button aiVsAIButton = new Button("AI vs AI");
         aiVsAIButton.setStyle(
                 "-fx-font-size: 18px; " +
-                "-fx-padding: 15px 50px; " +
-                "-fx-background-color: #9c27b0; " +
-                "-fx-text-fill: white; " +
-                "-fx-font-weight: bold; " +
-                "-fx-cursor: hand;"
-        );
+                        "-fx-padding: 15px 50px; " +
+                        "-fx-background-color: #9c27b0; " +
+                        "-fx-text-fill: white; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-cursor: hand;");
         aiVsAIButton.setMinWidth(250);
         if (onNewAIVsAIGame != null) {
             aiVsAIButton.setOnAction(e -> onNewAIVsAIGame.run());
@@ -103,30 +94,26 @@ public class StartScreen {
             aiVsAIButton.setDisable(true);
         }
 
-        // Botón Cargar Partida (deshabilitado si no existe archivo)
         Button loadGameButton = new Button("Load Last Game");
         loadGameButton.setStyle(
                 "-fx-font-size: 18px; " +
-                "-fx-padding: 15px 50px; " +
-                "-fx-background-color: #2196f3; " +
-                "-fx-text-fill: white; " +
-                "-fx-font-weight: bold; " +
-                "-fx-cursor: hand;"
-        );
+                        "-fx-padding: 15px 50px; " +
+                        "-fx-background-color: #2196f3; " +
+                        "-fx-text-fill: white; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-cursor: hand;");
         loadGameButton.setMinWidth(250);
 
-        // Verificar si existe archivo de historial
         boolean gameExists = new File(HISTORY_FILE).exists();
         if (!gameExists) {
             loadGameButton.setDisable(true);
             loadGameButton.setStyle(
                     "-fx-font-size: 18px; " +
-                    "-fx-padding: 15px 50px; " +
-                    "-fx-background-color: #888888; " +
-                    "-fx-text-fill: #cccccc; " +
-                    "-fx-font-weight: bold; " +
-                    "-fx-cursor: default;"
-            );
+                            "-fx-padding: 15px 50px; " +
+                            "-fx-background-color: #888888; " +
+                            "-fx-text-fill: #cccccc; " +
+                            "-fx-font-weight: bold; " +
+                            "-fx-cursor: default;");
         }
 
         loadGameButton.setOnAction(e -> {
@@ -135,7 +122,6 @@ public class StartScreen {
             }
         });
 
-        // Información
         Label infoLabel = new Label();
         infoLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #888888; -fx-wrap-text: true;");
         if (gameExists) {
@@ -153,8 +139,7 @@ public class StartScreen {
                 newTwoPlayerGameButton,
                 aiVsAIButton,
                 loadGameButton,
-                infoLabel
-        );
+                infoLabel);
 
         return panel;
     }

@@ -14,8 +14,9 @@ import chess.model.Position;
  * <p>
  * This class carries:
  * <ul>
- *   <li>Model data to apply/undo the move deterministically (without snapshots)</li>
- *   <li>UI-friendly data to render move history</li>
+ * <li>Model data to apply/undo the move deterministically (without
+ * snapshots)</li>
+ * <li>UI-friendly data to render move history</li>
  * </ul>
  */
 public class Step implements Serializable {
@@ -23,15 +24,12 @@ public class Step implements Serializable {
 
     private final Move move;
 
-    // UI-friendly
     private final PieceColor moverColor;
     private final PieceType moverType;
     private final String displayText;
 
-    // Reversible info
-    private final Piece capturedPiece; // null if none
+    private final Piece capturedPiece;
 
-    // Special move flags / metadata to support deterministic undo/redo
     private final boolean castling;
     private final Position rookFrom;
     private final Position rookTo;
@@ -41,10 +39,10 @@ public class Step implements Serializable {
     private final Position enPassantCapturedPawnPos;
 
     private final boolean promotion;
-    private final Piece promotedTo; // the piece that ended up on the target square
-    private final Piece originalPawn; // the pawn (before promotion)
+    private final Piece promotedTo;
+    private final Piece originalPawn;
 
-    private final Boolean moverHadMovedBefore; // only relevant for King/Rook
+    private final Boolean moverHadMovedBefore;
 
     private final Position enPassantTargetBefore;
     private final Position enPassantTargetAfter;

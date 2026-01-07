@@ -15,7 +15,6 @@ public final class MoveResult {
 
     private final Piece capturedPiece;
 
-    // State / consequences
     private final boolean check;
     private final boolean checkmate;
     private final boolean stalemate;

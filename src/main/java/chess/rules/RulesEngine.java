@@ -11,8 +11,10 @@ import chess.model.PieceColor;
 /**
  * Centralized, minimal rules layer.
  *
- * Pieces generate pseudo-legal moves; Board filters legal moves; Game keeps turn/time/history.
- * This class offers a single entry point so UI/AI doesn't need to scatter rules.
+ * Pieces generate pseudo-legal moves; Board filters legal moves; Game keeps
+ * turn/time/history.
+ * This class offers a single entry point so UI/AI doesn't need to scatter
+ * rules.
  */
 public final class RulesEngine {
     private RulesEngine() {
@@ -61,8 +63,7 @@ public final class RulesEngine {
                 stalemate,
                 insufficientMaterial,
                 gameOver,
-                gameResult
-        );
+                gameResult);
     }
 
     public static boolean isInCheck(Board board, PieceColor color) {
@@ -78,7 +79,8 @@ public final class RulesEngine {
     }
 
     /**
-     * Returns a human-readable game result message if the side-to-move is already in a terminal state.
+     * Returns a human-readable game result message if the side-to-move is already
+     * in a terminal state.
      * Returns null if the game should continue.
      */
     public static String evaluateGameResult(Board board, PieceColor sideToMove) {
@@ -109,7 +111,8 @@ public final class RulesEngine {
     /**
      * Validates and applies a move to the given game, returning a compact result.
      *
-     * Keeps the mutation logic inside Game (clocks/history/turn), but computes consequences here.
+     * Keeps the mutation logic inside Game (clocks/history/turn), but computes
+     * consequences here.
      */
     public static MoveResult applyMove(Game game, Move move) {
         PieceColor currentTurn = game.getTurn();
@@ -123,15 +126,14 @@ public final class RulesEngine {
         }
 
         Piece captured = game.getLastCapturedPiece();
-        // Don't clear here; UI may want to read it.
 
         PieceColor nextTurn = game.getTurn();
         Board board = game.getBoard();
 
-    boolean check = isInCheck(board, nextTurn);
-    boolean checkmate = board.isCheckmate(nextTurn);
-    boolean stalemate = board.isStalemate(nextTurn);
-    boolean insufficient = board.isInsufficientMaterial();
+        boolean check = isInCheck(board, nextTurn);
+        boolean checkmate = board.isCheckmate(nextTurn);
+        boolean stalemate = board.isStalemate(nextTurn);
+        boolean insufficient = board.isInsufficientMaterial();
         boolean gameOver = game.isGameOver();
         String gameResult = game.getGameResult();
 

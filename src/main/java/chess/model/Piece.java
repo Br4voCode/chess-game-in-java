@@ -11,8 +11,13 @@ public abstract class Piece {
         this.type = type;
     }
 
-    public PieceColor getColor() { return color; }
-    public PieceType getType() { return type; }
+    public PieceColor getColor() {
+        return color;
+    }
+
+    public PieceType getType() {
+        return type;
+    }
 
     /**
      * Generate pseudo-legal moves (may include moves leaving king in check).
@@ -21,24 +26,36 @@ public abstract class Piece {
     public abstract List<Move> getPseudoLegalMoves(Board board, Position pos);
 
     public String toUnicode() {
-        // Return Unicode chess symbols
+
         if (color == PieceColor.WHITE) {
             switch (type) {
-                case KING: return "♔";
-                case QUEEN: return "♕";
-                case ROOK: return "♖";
-                case BISHOP: return "♗";
-                case KNIGHT: return "♘";
-                case PAWN: return "♙";
+                case KING:
+                    return "♔";
+                case QUEEN:
+                    return "♕";
+                case ROOK:
+                    return "♖";
+                case BISHOP:
+                    return "♗";
+                case KNIGHT:
+                    return "♘";
+                case PAWN:
+                    return "♙";
             }
         } else {
             switch (type) {
-                case KING: return "♚";
-                case QUEEN: return "♛";
-                case ROOK: return "♜";
-                case BISHOP: return "♝";
-                case KNIGHT: return "♞";
-                case PAWN: return "♟";
+                case KING:
+                    return "♚";
+                case QUEEN:
+                    return "♛";
+                case ROOK:
+                    return "♜";
+                case BISHOP:
+                    return "♝";
+                case KNIGHT:
+                    return "♞";
+                case PAWN:
+                    return "♟";
             }
         }
         return "?";

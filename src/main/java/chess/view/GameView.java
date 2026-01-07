@@ -27,20 +27,18 @@ public class GameView {
     private StatusBar statusBar;
     private GameController controller;
 
-    // Referencias a componentes de UI para actualización
     private Label turnValue;
     private Label gameStateValue;
     private FlowPane whiteCapturedBox;
     private FlowPane blackCapturedBox;
     private VBox movesBox;
-    // Timer components
+
     private TimerBar blackTimerBar;
     private TimerBar whiteTimerBar;
     private Game gameInstance;
     private boolean shouldLoadHistory;
     private AIMatch aiMatch;
 
-    // Navigation buttons
     private Button undoButton;
     private Button redoButton;
 
@@ -60,15 +58,12 @@ public class GameView {
         this.shouldLoadHistory = loadFromHistory;
         initializeComponents(loadFromHistory, isPlayerVsPlayer, isAIVsAI);
         setupLayout();
-        updateUIFromController(); // Forzar actualización inicial tras montar el layout
+        updateUIFromController();
 
-        // Cargar el historial visual después de que setupLayout haya inicializado
-        // movesBox
         if (shouldLoadHistory && gameInstance != null && StartScreen.hasGameHistory()) {
             loadStepHistoryToUI(gameInstance.getStepHistory());
         }
 
-        // Iniciar partida IA vs IA si es necesario
         if (isAIVsAI) {
             startAIVsAIMatch();
         }
@@ -78,21 +73,21 @@ public class GameView {
         Game game;
 
         if (loadFromHistory && StartScreen.hasGameHistory()) {
-            // Cargar partida anterior
+
             game = GameReconstructor.reconstructGameFromHistory(
                     StartScreen.getHistoryFilePath(),
                     new HumanPlayer(),
                     new AIPlayer(PieceColor.BLACK, 3));
         } else {
-            // Crear nueva partida
+
             if (isAIVsAI) {
-                // IA vs IA
+
                 game = new Game(new AIPlayer(PieceColor.WHITE, 3), new AIPlayer(PieceColor.BLACK, 3));
             } else if (isPlayerVsPlayer) {
-                // Humano vs Humano
+
                 game = new Game(new HumanPlayer(), new HumanPlayer());
             } else {
-                // Humano vs IA
+
                 game = new Game(new HumanPlayer(), new AIPlayer(PieceColor.BLACK, 3));
             }
         }
@@ -105,17 +100,14 @@ public class GameView {
 
         this.chessBoard.setSquareClickListener(controller::onSquareClicked);
 
-        // Imprimir el historial al iniciar el juego
-
     }
 
     private void setupLayout() {
         root = new BorderPane();
-        // Timer bars (se ubican alrededor del tablero)
+
         blackTimerBar = new TimerBar(gameInstance.getGameClock(), PieceColor.BLACK, true);
         whiteTimerBar = new TimerBar(gameInstance.getGameClock(), PieceColor.WHITE, false);
 
-        // Panel superior con título
         Label title = new Label("♔ Chess Game ♚");
         title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
         HBox titleBar = new HBox(title);
@@ -123,14 +115,11 @@ public class GameView {
         titleBar.setPadding(new Insets(10));
         titleBar.setStyle("-fx-background-color: #3c3f41;");
 
-        // Paneles laterales
         VBox leftPanel = createLeftPanel();
         VBox rightPanel = createRightPanel();
 
-        // Panel central
         VBox centerPanel = createCenterPanel();
 
-        // Configurar layout
         root.setTop(titleBar);
         root.setLeft(leftPanel);
         root.setCenter(centerPanel);
@@ -165,7 +154,6 @@ public class GameView {
             controller.hintButton();
         });
 
-        // History navigation (undo/redo)
         HBox navBox = new HBox(10);
         navBox.setAlignment(Pos.CENTER);
 
@@ -181,23 +169,18 @@ public class GameView {
 
         navBox.getChildren().addAll(undoButton, redoButton);
 
-        // Importante: el controller puede haber intentado habilitar/deshabilitar estos botones
-        // ANTES de que existieran (setGameView se llama en initializeComponents).
-        // Re-sincronizamos aquí con el estado real del StepHistory.
         if (controller != null && gameInstance != null && gameInstance.getStepHistory() != null) {
             boolean canUndo = gameInstance.getStepHistory().canUndo();
             boolean canRedo = gameInstance.getStepHistory().canRedo();
             setHistoryNavigationEnabled(canUndo, canRedo);
         }
 
-        // Información del turno
         Label turnLabel = new Label("Current turn:");
         turnLabel.setStyle("-fx-text-fill: #bbbbbb;");
 
         turnValue = new Label(gameInstance.getTurn() == PieceColor.WHITE ? "White" : "Black");
         turnValue.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
 
-        // Estado del juego
         Label gameStateLabel = new Label("Game state:");
         gameStateLabel.setStyle("-fx-text-fill: #bbbbbb;");
 
@@ -208,9 +191,9 @@ public class GameView {
         panel.getChildren().addAll(
                 panelTitle,
                 newGameButton,
-        navBox,
+                navBox,
                 hintButton,
-                new Pane(), // Espaciador
+                new Pane(),
                 turnLabel, turnValue,
                 spacer,
                 gameStateLabel, gameStateValue);
@@ -240,7 +223,6 @@ public class GameView {
         Label panelTitle = new Label("Game Info");
         panelTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
 
-        // Piezas capturadas
         Label whiteCapturedTitle = new Label("White captures:");
         whiteCapturedTitle.setStyle("-fx-text-fill: #bbbbbb;");
 
@@ -257,7 +239,6 @@ public class GameView {
         blackCapturedBox.setPrefHeight(100);
         blackCapturedBox.setMaxWidth(Double.MAX_VALUE);
 
-        // Historial de movimientos
         Label movesTitle = new Label("Move history:");
         movesTitle.setStyle("-fx-text-fill: #bbbbbb;");
 
@@ -284,14 +265,10 @@ public class GameView {
         panel.setStyle("-fx-background-color: #2b2b2b;");
         VBox.setVgrow(panel, Priority.ALWAYS);
 
-        // Tablero con animaciones
         StackPane boardWithAnimations = chessBoard.getBoardWithAnimations();
 
-        // Allow the board to use all available space (it will keep square shape
-        // internally)
         boardWithAnimations.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
-        // Instrucciones
         Label helpLabel = new Label("Click a piece to select it, then click a destination square");
         helpLabel.setStyle("-fx-text-fill: #bbbbbb; -fx-font-size: 12px;");
 
@@ -303,8 +280,6 @@ public class GameView {
         boardContainer.setStyle("-fx-background-color: #2b2b2b;");
         VBox.setVgrow(boardContainer, Priority.ALWAYS);
 
-        // Contenedor vertical para tablero y relojes (relojes centrados, tablero
-        // grande)
         VBox mainBoardVBox = new VBox(10);
         mainBoardVBox.setAlignment(Pos.CENTER);
         mainBoardVBox.setMaxHeight(Double.MAX_VALUE);
@@ -312,7 +287,6 @@ public class GameView {
         mainBoardVBox.setStyle("-fx-background-color: #2b2b2b;");
         VBox.setVgrow(mainBoardVBox, Priority.ALWAYS);
 
-        // Reloj superior en un HBox centrado (ancho limitado al tablero)
         HBox topTimerContainer = new HBox();
         topTimerContainer.setAlignment(Pos.CENTER);
         if (blackTimerBar != null) {
@@ -320,10 +294,8 @@ public class GameView {
             topTimerContainer.getChildren().add(blackTimerBar);
         }
 
-        // El tablero crece libremente
         VBox.setVgrow(boardWithAnimations, Priority.ALWAYS);
 
-        // Reloj inferior en un HBox centrado (ancho limitado al tablero)
         HBox bottomTimerContainer = new HBox();
         bottomTimerContainer.setAlignment(Pos.CENTER);
         if (whiteTimerBar != null) {
@@ -369,7 +341,6 @@ public class GameView {
         return blackTimerBar;
     }
 
-    // Métodos para actualizar la UI desde el controlador
     public void updateUIFromController() {
         if (gameInstance != null) {
             PieceColor currentTurn = gameInstance.getTurn();
@@ -391,8 +362,7 @@ public class GameView {
     }
 
     public void addCapturedPiece(String pieceSymbol, boolean isWhitePiece) {
-        // White pieces are captured by black, so they go in black's captured box
-        // Black pieces are captured by white, so they go in white's captured box
+
         FlowPane targetBox = isWhitePiece ? blackCapturedBox : whiteCapturedBox;
         if (targetBox != null) {
             Label pieceLabel = new Label(pieceSymbol);
@@ -417,7 +387,6 @@ public class GameView {
             moveLabel.setStyle("-fx-text-fill: white;");
             movesBox.getChildren().add(moveLabel);
 
-            // Limitar a últimos 10 movimientos
             if (movesBox.getChildren().size() > 10) {
                 movesBox.getChildren().remove(0);
             }
@@ -432,7 +401,6 @@ public class GameView {
             moveLabel.setStyle("-fx-text-fill: white;");
             movesBox.getChildren().add(moveLabel);
 
-            // Limitar a últimos 10 movimientos
             if (movesBox.getChildren().size() > 10) {
                 movesBox.getChildren().remove(0);
             }
@@ -456,15 +424,14 @@ public class GameView {
     /**
      * Removes the last captured piece icon from the UI.
      *
-     * @param capturedPieceColor the color of the piece that was captured on the board
+     * @param capturedPieceColor the color of the piece that was captured on the
+     *                           board
      */
     public void removeLastCapturedPiece(chess.model.PieceColor capturedPieceColor) {
         if (capturedPieceColor == null) {
             return;
         }
 
-        // White pieces are captured by black, so they were drawn in blackCapturedBox.
-        // Black pieces are captured by white, so they were drawn in whiteCapturedBox.
         FlowPane targetBox = (capturedPieceColor == PieceColor.WHITE) ? blackCapturedBox : whiteCapturedBox;
         if (targetBox == null) {
             return;
@@ -495,21 +462,18 @@ public class GameView {
         AIPlayer blackAI = (AIPlayer) gameInstance.getBlackPlayer();
 
         aiMatch = new AIMatch(gameInstance, whiteAI, blackAI);
-        aiMatch.setDelayBetweenMoves(1500); // 1.5 ثانية بين الحركات
+        aiMatch.setDelayBetweenMoves(1500);
 
-        // callback عند انتهاء المباراة
         aiMatch.setOnGameOver(() -> {
             updateUIFromController();
             statusBar.setStatus("مباراة ذكاء اصطناعي - انتهت اللعبة: " + gameInstance.getGameResult());
             controller.onAIMatchGameOver();
         });
 
-        // callback لتنفيذ كل حركة مع الرسوم المتحركة
         aiMatch.setOnMoveExecuted((move) -> {
             controller.executeMoveWithAnimation(move);
         });
 
-        // بدء المباراة
         new Thread(() -> aiMatch.startMatch()).start();
     }
 

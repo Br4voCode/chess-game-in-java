@@ -7,22 +7,17 @@ import java.io.Serializable;
  */
 public class GameClock implements Serializable {
     private static final long serialVersionUID = 1L;
-    
-    // Initial time in milliseconds (5 minutes = 300_000 ms)
+
     private static final long INITIAL_TIME_MILLIS = 5 * 60 * 1000;
-    
-    // Time remaining for each player (in milliseconds)
+
     private long whiteTimeRemainingMillis;
     private long blackTimeRemainingMillis;
-    
-    // Track which player is currently active
+
     private PieceColor activePlayer;
-    
-    // Timestamp for timing (milliseconds)
+
     private long lastUpdateTimeMillis;
     private boolean isRunning = false;
-    
-    // Flag to track if game is paused/stopped
+
     private boolean clockPaused = false;
 
     public GameClock() {
@@ -82,15 +77,13 @@ public class GameClock implements Serializable {
      * This should be called after each move
      */
     public void switchPlayer() {
-        if (!isRunning || clockPaused) return;
-        
-        // Update current player's remaining time
+        if (!isRunning || clockPaused)
+            return;
+
         updateCurrentPlayerTime();
-        
-        // Switch to next player
+
         activePlayer = activePlayer == PieceColor.WHITE ? PieceColor.BLACK : PieceColor.WHITE;
-        
-        // Reset last update time for new player
+
         this.lastUpdateTimeMillis = System.currentTimeMillis();
     }
 
@@ -98,7 +91,8 @@ public class GameClock implements Serializable {
      * Update the current active player's remaining time
      */
     private void updateCurrentPlayerTime() {
-        if (!isRunning || clockPaused) return;
+        if (!isRunning || clockPaused)
+            return;
 
         long currentTimeMillis = System.currentTimeMillis();
         long elapsedMillis = currentTimeMillis - lastUpdateTimeMillis;
@@ -117,7 +111,8 @@ public class GameClock implements Serializable {
 
     /**
      * Remaining milliseconds for a player.
-     * If the clock is running and this is the active player, this value is calculated in real time.
+     * If the clock is running and this is the active player, this value is
+     * calculated in real time.
      */
     private long getTimeRemainingMillis(PieceColor player) {
         long baseMillis = (player == PieceColor.WHITE) ? whiteTimeRemainingMillis : blackTimeRemainingMillis;
@@ -134,7 +129,8 @@ public class GameClock implements Serializable {
     }
 
     /**
-     * Get the remaining time for a player in seconds (rounded up to avoid showing 04:59 immediately).
+     * Get the remaining time for a player in seconds (rounded up to avoid showing
+     * 04:59 immediately).
      */
     public long getTimeRemaining(PieceColor player) {
         long millis = getTimeRemainingMillis(player);
@@ -231,9 +227,9 @@ public class GameClock implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("GameClock{white=%s, black=%s, active=%s}", 
-            formatTime(getTimeRemaining(PieceColor.WHITE)),
-            formatTime(getTimeRemaining(PieceColor.BLACK)),
-            activePlayer);
+        return String.format("GameClock{white=%s, black=%s, active=%s}",
+                formatTime(getTimeRemaining(PieceColor.WHITE)),
+                formatTime(getTimeRemaining(PieceColor.BLACK)),
+                activePlayer);
     }
 }
