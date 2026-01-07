@@ -53,7 +53,27 @@ public class Pawn extends Piece {
             }
         }
 
-        // Note: en-passant omitted in this simplified version
+        // en passant captures
+        Position enPassantTarget = board.getEnPassantTarget();
+        if (enPassantTarget != null) {
+            // Check if pawn can capture en passant
+            int expectedRow = pos.getRow() + dir;
+            int expectedColDiff = Math.abs(enPassantTarget.getCol() - pos.getCol());
+            
+            if (enPassantTarget.getRow() == expectedRow && expectedColDiff == 1) {
+                // This is a valid en passant capture
+                if (enPassantTarget.getRow() == promotionRow) {
+                    // Add promotion en passant captures for all possible pieces
+                    moves.add(new Move(pos, enPassantTarget, new Queen(color)));
+                    moves.add(new Move(pos, enPassantTarget, new Rook(color)));
+                    moves.add(new Move(pos, enPassantTarget, new Bishop(color)));
+                    moves.add(new Move(pos, enPassantTarget, new Knight(color)));
+                } else {
+                    moves.add(new Move(pos, enPassantTarget));
+                }
+            }
+        }
+
         return moves;
     }
 }
