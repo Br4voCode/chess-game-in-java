@@ -12,12 +12,17 @@ import chess.model.PieceColor;
 import chess.model.PieceType;
 import chess.model.Position;
 import chess.model.pieces.Bishop;
+import chess.model.pieces.King;
 import chess.model.pieces.Knight;
 import chess.model.pieces.Queen;
 import chess.model.pieces.Rook;
+import chess.rules.MoveResult;
+import chess.rules.RulesEngine;
 import chess.view.ChessBoard;
 import chess.view.PromotionDialog;
 import chess.view.components.StatusBar;
+import chess.view.endscreen.GameEndScreen;
+import chess.history.Step;
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
@@ -33,6 +38,7 @@ public class GameController {
     private boolean isAnimating = false;
     private boolean isTwoPlayerMode = false;
     private boolean isAIVsAIMode = false;
+    private boolean isHistoryNavigationLocked = false; // locked when game over
 
     public GameController(Game game, ChessBoard chessBoard, StatusBar statusBar) {
         this(game, chessBoard, statusBar, false, false);
@@ -60,6 +66,236 @@ public class GameController {
     public void setGameView(chess.view.GameView gameView) {
         this.gameView = gameView;
         updateUI(); // Sincronizar UI al vincular la vista
+        updateHistoryNavigationButtons();
+    }
+
+    private void updateHistoryNavigationButtons() {
+        if (gameView == null || game == null) {
+            return;
+        }
+        if (isHistoryNavigationLocked || game.isGameOver()) {
+            gameView.setHistoryNavigationEnabled(false, false);
+            return;
+        }
+        boolean canUndo = game.getStepHistory() != null && game.getStepHistory().canUndo();
+        boolean canRedo = game.getStepHistory() != null && game.getStepHistory().canRedo();
+        gameView.setHistoryNavigationEnabled(canUndo, canRedo);
+    }
+
+    /**
+     * Undo navigation requested from UI.
+     *
+     * <p>
+     * NOTE: full reverse-move logic is implemented in a later step; for now this is the entry point.
+     */
+    public void undoStepWithAnimation() {
+        if (isAnimating || game == null || gameView == null) {
+            return;
+        }
+        if (game.isGameOver()) {
+            updateHistoryNavigationButtons();
+            return;
+        }
+
+        Step step = game.getStepHistory() != null ? game.getStepHistory().popForUndo() : null;
+        if (step == null) {
+            updateHistoryNavigationButtons();
+            return;
+        }
+
+        isAnimating = true;
+        chessBoard.clearHighlights();
+        selectedPosition = null;
+
+        Move forward = step.getMove();
+        Move reverse = new Move(forward.getTo(), forward.getFrom());
+
+        Runnable afterAnim = () -> {
+            applyUndo(step);
+            // Update UI
+            gameView.removeLastMoveFromHistory();
+            if (step.getCapturedPiece() != null) {
+                gameView.removeLastCapturedPiece(step.getCapturedPiece().getColor());
+            }
+            updateBoardState();
+            gameView.updateUIFromController();
+            gameView.updateTimers();
+
+            // If we navigated back, we are no longer locked by a previous terminal state.
+            isHistoryNavigationLocked = false;
+
+            // Persist current applied history (past only)
+            game.getStepHistoryStore().saveApplied(game.getStepHistory());
+            updateHistoryNavigationButtons();
+
+            isAnimating = false;
+        };
+
+        if (step.isCastling()) {
+            Move rookReverse = new Move(step.getRookTo(), step.getRookFrom());
+            chessBoard.animateMovesSimultaneously(reverse, rookReverse, afterAnim);
+        } else {
+            chessBoard.animateMove(reverse, afterAnim);
+        }
+    }
+
+    /**
+     * Redo navigation requested from UI.
+     */
+    public void redoStepWithAnimation() {
+        if (isAnimating || game == null || gameView == null) {
+            return;
+        }
+        if (game.isGameOver()) {
+            updateHistoryNavigationButtons();
+            return;
+        }
+
+        Step step = game.getStepHistory() != null ? game.getStepHistory().popForRedo() : null;
+        if (step == null) {
+            updateHistoryNavigationButtons();
+            return;
+        }
+
+        isAnimating = true;
+        chessBoard.clearHighlights();
+        selectedPosition = null;
+
+        Move forward = step.getMove();
+
+        Runnable afterAnim = () -> {
+            applyRedo(step);
+
+            // Update move history panel exactly like current format
+            gameView.addMoveToHistoryWithColor(step.getDisplayText(), step.getMoverColor());
+            if (step.getCapturedPiece() != null) {
+                // Re-add captured piece to UI
+                gameView.addCapturedPiece(step.getCapturedPiece().toUnicode(), step.getCapturedPiece().getColor() == PieceColor.WHITE);
+            }
+
+            updateBoardState();
+            gameView.updateUIFromController();
+            gameView.updateTimers();
+
+            game.getStepHistoryStore().saveApplied(game.getStepHistory());
+            updateHistoryNavigationButtons();
+
+            isAnimating = false;
+        };
+
+        if (step.isCastling()) {
+            Move rookForward = new Move(step.getRookFrom(), step.getRookTo());
+            chessBoard.animateMovesSimultaneously(forward, rookForward, afterAnim);
+        } else {
+            chessBoard.animateMove(forward, afterAnim);
+        }
+    }
+
+    private void applyUndo(Step step) {
+        Board board = game.getBoard();
+        Move move = step.getMove();
+
+        // Clear any terminal state since we are moving back in time
+        game.clearGameOverState();
+
+        // Restore en passant target
+        board.setEnPassantTarget(step.getEnPassantTargetBefore());
+
+        // Move the moved piece back from TO to FROM
+        Piece mover = board.getPieceAt(move.getTo());
+
+        // Handle promotion undo: replace promoted piece with original pawn
+        if (step.isPromotion()) {
+            mover = step.getOriginalPawn();
+        }
+
+        board.setPieceAt(move.getFrom(), mover);
+        board.setPieceAt(move.getTo(), null);
+
+        // Restore captured piece
+        if (step.getCapturedPiece() != null) {
+            if (step.isEnPassant() && step.getEnPassantCapturedPawnPos() != null) {
+                board.setPieceAt(step.getEnPassantCapturedPawnPos(), step.getCapturedPiece());
+            } else {
+                board.setPieceAt(move.getTo(), step.getCapturedPiece());
+            }
+        }
+
+        // Undo castling rook movement
+        if (step.isCastling() && step.getRookFrom() != null && step.getRookTo() != null) {
+            Piece rook = board.getPieceAt(step.getRookTo());
+            board.setPieceAt(step.getRookFrom(), rook);
+            board.setPieceAt(step.getRookTo(), null);
+
+            if (rook instanceof Rook && step.getRookHadMovedBefore() != null) {
+                ((Rook) rook).setHasMoved(step.getRookHadMovedBefore());
+            }
+        }
+
+        // Restore mover hasMoved flag (King/Rook)
+        if (mover instanceof King && step.getMoverHadMovedBefore() != null) {
+            ((King) mover).setHasMoved(step.getMoverHadMovedBefore());
+        } else if (mover instanceof Rook && step.getMoverHadMovedBefore() != null) {
+            ((Rook) mover).setHasMoved(step.getMoverHadMovedBefore());
+        }
+
+        // Update game counters
+        game.setMoveCount(game.getMoveCount() - 1);
+        game.setTurn(step.getMoverColor());
+    }
+
+    private void applyRedo(Step step) {
+        Board board = game.getBoard();
+        Move move = step.getMove();
+
+        // Clear terminal state; redo might re-enter terminal state but we don't compute it here.
+        game.clearGameOverState();
+
+        // Restore en passant target to the recorded after-state
+        board.setEnPassantTarget(step.getEnPassantTargetAfter());
+
+        Piece mover = board.getPieceAt(move.getFrom());
+        if (mover == null) {
+            // If something went wrong, we fail softly by recomputing from current board.
+            mover = board.getPieceAt(move.getTo());
+        }
+
+        // En passant capture on redo
+        if (step.isEnPassant() && step.getEnPassantCapturedPawnPos() != null) {
+            board.setPieceAt(step.getEnPassantCapturedPawnPos(), null);
+        }
+
+        // Normal capture on redo
+        if (!step.isEnPassant() && step.getCapturedPiece() != null) {
+            board.setPieceAt(move.getTo(), null);
+        }
+
+        // Move piece forward
+        board.setPieceAt(move.getTo(), mover);
+        board.setPieceAt(move.getFrom(), null);
+
+        // Apply promotion piece replacement
+        if (step.isPromotion() && step.getPromotedTo() != null) {
+            board.setPieceAt(move.getTo(), step.getPromotedTo());
+        }
+
+        // Apply castling rook move
+        if (step.isCastling() && step.getRookFrom() != null && step.getRookTo() != null) {
+            Piece rook = board.getPieceAt(step.getRookFrom());
+            board.setPieceAt(step.getRookTo(), rook);
+            board.setPieceAt(step.getRookFrom(), null);
+        }
+
+        // Update game counters
+        game.setMoveCount(game.getMoveCount() + 1);
+        game.setTurn(step.getMoverColor().opposite());
+
+        // Recompute terminal state after redo (and also after undo we already cleared it)
+        String result = RulesEngine.evaluateGameResult(board, game.getTurn());
+        if (result != null) {
+            game.setGameOver(true, result);
+            isHistoryNavigationLocked = true;
+        }
     }
 
     public void onSquareClicked(Position position) {
@@ -99,7 +335,7 @@ public class GameController {
 
             // Ahora seleccionar la nueva pieza
             selectedPosition = position;
-            List<Move> allPossibleMoves = game.getBoard().getAllPossibleMoves(currentTurn);
+            List<Move> allPossibleMoves = RulesEngine.legalMoves(game.getBoard(), currentTurn);
 
             List<Move> pieceMoves = allPossibleMoves.stream()
                     .filter(move -> move.getFrom().equals(position))
@@ -153,7 +389,7 @@ public class GameController {
 
                 // Ahora seleccionar la nueva pieza
                 selectedPosition = targetPosition;
-                List<Move> pieceMoves = game.getBoard().getAllPossibleMoves(currentTurn).stream()
+        List<Move> pieceMoves = RulesEngine.legalMoves(game.getBoard(), currentTurn).stream()
                         .filter(move -> move.getFrom().equals(targetPosition))
                         .collect(Collectors.toList());
 
@@ -193,7 +429,8 @@ public class GameController {
 
             if (isCastling) {
                 animateCastling(move, () -> {
-                    boolean moveSuccessful = game.applyMove(move);
+                    MoveResult result = RulesEngine.applyMove(game, move);
+                    boolean moveSuccessful = result.isMoveApplied();
 
                     if (moveSuccessful) {
                         chessBoard.updateSingleSquare(from);
@@ -203,19 +440,18 @@ public class GameController {
                         String moveDescription = "Castling (" +
                                 (to.getCol() > from.getCol() ? "Kingside" : "Queenside") + ")";
 
-                        PieceColor opponentColor = game.getTurn();
-                        if (game.getBoard().isKingInCheck(opponentColor)) {
+                        if (result.isCheck()) {
                             moveDescription += " - CHECK!";
+                        }
 
-                            if (game.getBoard().isCheckmate(opponentColor)) {
-                                moveDescription += " CHECKMATE! " +
-                                        (opponentColor == PieceColor.WHITE ? "Black" : "White") +
-                                        " wins!";
-                                statusBar.setStatus(moveDescription);
-                                game.stopClock();
-                                isAnimating = false;
-                                return;
-                            }
+                        if (result.isGameOver()) {
+                            statusBar.setStatus(result.getGameResult() != null ? result.getGameResult() : moveDescription);
+                            game.stopClock();
+                            showEndScreenIfNeeded(result);
+                            isHistoryNavigationLocked = true;
+                            updateHistoryNavigationButtons();
+                            isAnimating = false;
+                            return;
                         }
 
                         statusBar.setStatus("Move: " + moveDescription + ". " +
@@ -245,11 +481,12 @@ public class GameController {
                 });
             } else {
                 chessBoard.animateMove(move, () -> {
-                    boolean moveSuccessful = game.applyMove(move);
+                    MoveResult result = RulesEngine.applyMove(game, move);
+                    boolean moveSuccessful = result.isMoveApplied();
 
                     if (moveSuccessful) {
                         // Check if a piece was captured and update UI
-                        Piece capturedPiece = game.getLastCapturedPiece();
+                        Piece capturedPiece = result.getCapturedPiece();
                         if (capturedPiece != null && gameView != null) {
                             String pieceSymbol = capturedPiece.toUnicode();
                             boolean isWhitePiece = capturedPiece.getColor() == PieceColor.WHITE;
@@ -279,19 +516,16 @@ public class GameController {
                                 " " + positionToChessNotation(from) +
                                 " to " + positionToChessNotation(to);
 
-                        PieceColor opponentColor = game.getTurn();
-                        if (game.getBoard().isKingInCheck(opponentColor)) {
+                        if (result.isCheck()) {
                             moveDescription += " - CHECK!";
+                        }
 
-                            if (game.getBoard().isCheckmate(opponentColor)) {
-                                moveDescription += " CHECKMATE! " +
-                                        (opponentColor == PieceColor.WHITE ? "Black" : "White") +
-                                        " wins!";
-                                statusBar.setStatus(moveDescription);
-                                game.stopClock();
-                                isAnimating = false;
-                                return;
-                            }
+                        if (result.isGameOver()) {
+                            statusBar.setStatus(result.getGameResult() != null ? result.getGameResult() : moveDescription);
+                            game.stopClock();
+                            showEndScreenIfNeeded(result);
+                            isAnimating = false;
+                            return;
                         }
 
                         statusBar.setStatus("Move: " + moveDescription + ". " +
@@ -303,6 +537,7 @@ public class GameController {
                             gameView.addMoveToHistoryWithColor(moveNotation, movedPiece.getColor());
                             gameView.updateUIFromController();
                             gameView.updateTimers();
+                            updateHistoryNavigationButtons();
                         }
 
                         // Check if time expired
@@ -329,6 +564,49 @@ public class GameController {
         return movedPiece.getType() == PieceType.KING &&
                 move.getFrom().getRow() == move.getTo().getRow() &&
                 Math.abs(move.getFrom().getCol() - move.getTo().getCol()) == 2;
+    }
+
+    private void showEndScreenIfNeeded(MoveResult result) {
+        // Player vs Player: ignore (we don't label which human won here).
+        if (isTwoPlayerMode) {
+            return;
+        }
+
+        if (gameView == null || gameView.getRoot() == null || gameView.getRoot().getScene() == null) {
+            return;
+        }
+
+        // The mover is the player who just made the move.
+        PieceColor moverColor = result.getNextTurn().opposite();
+
+        GameEndScreen.Result screenResult;
+        if (result.isStalemate()) {
+            screenResult = GameEndScreen.Result.DRAW;
+        } else if (result.isCheckmate()) {
+            PieceColor whiteIsAI = (game.getWhitePlayer() instanceof AIPlayer) ? PieceColor.WHITE : null;
+            PieceColor blackIsAI = (game.getBlackPlayer() instanceof AIPlayer) ? PieceColor.BLACK : null;
+
+            // Human vs AI
+            if (!isAIVsAIMode) {
+                PieceColor aiColor = (whiteIsAI != null) ? PieceColor.WHITE : (blackIsAI != null ? PieceColor.BLACK : null);
+                if (aiColor == null) {
+                    return; // can't decide
+                }
+                screenResult = (moverColor == aiColor) ? GameEndScreen.Result.LOSE : GameEndScreen.Result.WIN;
+            } else {
+                // AI vs AI: show WIN for the AI that delivered mate.
+                // (We reuse WIN/LOSE screens as "winner/loser" even if both are AI.)
+                if (whiteIsAI == null || blackIsAI == null) {
+                    return;
+                }
+                screenResult = (moverColor == PieceColor.WHITE) ? GameEndScreen.Result.WIN : GameEndScreen.Result.LOSE;
+            }
+        } else {
+            return;
+        }
+
+        javafx.stage.Stage owner = (javafx.stage.Stage) gameView.getRoot().getScene().getWindow();
+        new GameEndScreen(owner, screenResult).show();
     }
 
     private void animateCastling(Move kingMove, Runnable onFinished) {
@@ -359,8 +637,8 @@ public class GameController {
     }
 
     private void handleAITurn() {
-        // تخطي منطق الذكاء الاصطناعي في وضع لاعبين واثنين والذكاء الاصطناعي مقابل
-        // الذكاء الاصطناعي
+        // Skip auto AI turn handling in Player vs Player and AI vs AI.
+        // (AI vs AI is driven by AIMatch callbacks in GameView.)
         if (isTwoPlayerMode || isAIVsAIMode) {
             return;
         }
@@ -384,8 +662,27 @@ public class GameController {
         }
     }
 
+    /**
+     * AI vs AI mode uses {@link chess.game.AIMatch} which drives moves via
+     * {@code executeMoveWithAnimation}. We still want to show the end screen when
+     * the match ends, so we expose a small hook for GameView.
+     */
+    public void onAIMatchGameOver() {
+        if (!isAIVsAIMode) {
+            return;
+        }
+
+        if (game == null) {
+            return;
+        }
+
+        // We don't have a MoveResult here, so we build the minimal one from the current game state.
+        MoveResult result = RulesEngine.currentGameState(game);
+        showEndScreenIfNeeded(result);
+    }
+
     private boolean isMoveLegal(Move move, PieceColor color) {
-        List<Move> legalMoves = game.getBoard().getAllPossibleMoves(color);
+    List<Move> legalMoves = RulesEngine.legalMoves(game.getBoard(), color);
         return legalMoves.stream()
                 .anyMatch(legalMove -> legalMove.getFrom().equals(move.getFrom()) &&
                         legalMove.getTo().equals(move.getTo()));
@@ -416,6 +713,7 @@ public class GameController {
         game.startClock(); // Start the clock for the new game
         selectedPosition = null;
         isAnimating = false;
+        isHistoryNavigationLocked = false;
         chessBoard.clearHighlights();
 
         // Clear captured pieces UI
@@ -427,6 +725,7 @@ public class GameController {
         if (gameView != null) {
             gameView.updateTimers();
         }
+        updateHistoryNavigationButtons();
         statusBar.setStatus("New game started. " + game.getTurn() + " to move.");
     }
 

@@ -40,6 +40,10 @@ public class GameView {
     private boolean shouldLoadHistory;
     private AIMatch aiMatch;
 
+    // Navigation buttons
+    private Button undoButton;
+    private Button redoButton;
+
     public GameView() {
         this(false, false, false);
     }
@@ -61,7 +65,7 @@ public class GameView {
         // Cargar el historial visual después de que setupLayout haya inicializado
         // movesBox
         if (shouldLoadHistory && gameInstance != null && StartScreen.hasGameHistory()) {
-            loadMoveHistoryToUI(gameInstance.getMoveHistory());
+            loadStepHistoryToUI(gameInstance.getStepHistory());
         }
 
         // Iniciar partida IA vs IA si es necesario
@@ -161,6 +165,22 @@ public class GameView {
             controller.hintButton();
         });
 
+        // History navigation (undo/redo)
+        HBox navBox = new HBox(10);
+        navBox.setAlignment(Pos.CENTER);
+
+        undoButton = new Button("←");
+        undoButton.setStyle("-fx-background-color: #555555; -fx-text-fill: white; -fx-font-weight: bold;");
+        undoButton.setDisable(true);
+        undoButton.setOnAction(e -> controller.undoStepWithAnimation());
+
+        redoButton = new Button("→");
+        redoButton.setStyle("-fx-background-color: #555555; -fx-text-fill: white; -fx-font-weight: bold;");
+        redoButton.setDisable(true);
+        redoButton.setOnAction(e -> controller.redoStepWithAnimation());
+
+        navBox.getChildren().addAll(undoButton, redoButton);
+
         // Información del turno
         Label turnLabel = new Label("Current turn:");
         turnLabel.setStyle("-fx-text-fill: #bbbbbb;");
@@ -179,6 +199,7 @@ public class GameView {
         panel.getChildren().addAll(
                 panelTitle,
                 newGameButton,
+        navBox,
                 hintButton,
                 new Pane(), // Espaciador
                 turnLabel, turnValue,
@@ -186,6 +207,18 @@ public class GameView {
                 gameStateLabel, gameStateValue);
 
         return panel;
+    }
+
+    /**
+     * Called by the controller to toggle navigation buttons.
+     */
+    public void setHistoryNavigationEnabled(boolean canUndo, boolean canRedo) {
+        if (undoButton != null) {
+            undoButton.setDisable(!canUndo);
+        }
+        if (redoButton != null) {
+            redoButton.setDisable(!canRedo);
+        }
     }
 
     private VBox createRightPanel() {
@@ -397,25 +430,46 @@ public class GameView {
         }
     }
 
-    private void loadMoveHistoryToUI(chess.model.MoveHistory history) {
-        java.util.List<chess.model.Move> moves = history.getMoves();
+    /**
+     * Removes the last rendered move from the move history panel.
+     * Used for undo navigation.
+     */
+    public void removeLastMoveFromHistory() {
+        if (movesBox == null) {
+            return;
+        }
+        int size = movesBox.getChildren().size();
+        if (size > 0) {
+            movesBox.getChildren().remove(size - 1);
+        }
+    }
 
-        for (int i = 0; i < moves.size(); i++) {
-            chess.model.Move move = moves.get(i);
-            chess.model.Position from = move.getFrom();
-            chess.model.Position to = move.getTo();
+    /**
+     * Removes the last captured piece icon from the UI.
+     *
+     * @param capturedPieceColor the color of the piece that was captured on the board
+     */
+    public void removeLastCapturedPiece(chess.model.PieceColor capturedPieceColor) {
+        if (capturedPieceColor == null) {
+            return;
+        }
 
-            char fromFile = (char) ('a' + from.getCol());
-            int fromRank = 8 - from.getRow();
-            char toFile = (char) ('a' + to.getCol());
-            int toRank = 8 - to.getRow();
+        // White pieces are captured by black, so they were drawn in blackCapturedBox.
+        // Black pieces are captured by white, so they were drawn in whiteCapturedBox.
+        FlowPane targetBox = (capturedPieceColor == PieceColor.WHITE) ? blackCapturedBox : whiteCapturedBox;
+        if (targetBox == null) {
+            return;
+        }
+        int size = targetBox.getChildren().size();
+        if (size > 0) {
+            targetBox.getChildren().remove(size - 1);
+        }
+    }
 
-            String moveNotation = fromFile + "" + fromRank + "-" + toFile + "" + toRank;
-
-            // Determinar el color: índices pares son blancos, impares son negros
-            chess.model.PieceColor color = (i % 2 == 0) ? chess.model.PieceColor.WHITE : chess.model.PieceColor.BLACK;
-
-            addMoveToHistoryWithColor(moveNotation, color);
+    private void loadStepHistoryToUI(chess.history.StepHistory history) {
+        java.util.List<chess.history.Step> steps = history.getAppliedSteps();
+        for (chess.history.Step step : steps) {
+            addMoveToHistoryWithColor(step.getDisplayText(), step.getMoverColor());
         }
     }
 
@@ -438,6 +492,7 @@ public class GameView {
         aiMatch.setOnGameOver(() -> {
             updateUIFromController();
             statusBar.setStatus("مباراة ذكاء اصطناعي - انتهت اللعبة: " + gameInstance.getGameResult());
+            controller.onAIMatchGameOver();
         });
 
         // callback لتنفيذ كل حركة مع الرسوم المتحركة
