@@ -681,7 +681,32 @@ public class GameController {
         PieceColor winnerColor = result.getNextTurn().opposite();
 
         GameEndScreen.Result screenResult;
-        if (result.isStalemate() || result.isInsufficientMaterial() || result.isThreefoldRepetition()) {
+        String gameResultMessage = result.getGameResult();
+        boolean timeout = gameResultMessage != null && gameResultMessage.contains("ran out of time");
+
+        if (timeout) {
+            // Determinar modo de juego
+            boolean isPvP = isTwoPlayerMode;
+            boolean isAIVsAI = isAIVsAIMode;
+            boolean isPvAI = !isPvP && !isAIVsAI;
+
+            // El jugador que NO se quedó sin tiempo es el ganador
+            // result.getNextTurn() es el que perdió por tiempo
+            PieceColor loser = result.getNextTurn();
+            PieceColor winner = loser.opposite();
+
+            if (isPvP || isAIVsAI) {
+                // En PvP y AIvAI, mostrar WIN para el ganador, LOSE para el perdedor
+                // Suponiendo que la pantalla se muestra para ambos, aquí WIN si el jugador local es el ganador
+                // Para simplificar, WIN si winner es WHITE, LOSE si es BLACK (ajusta si tu UI es diferente)
+                screenResult = (winner == PieceColor.WHITE) ? GameEndScreen.Result.WIN : GameEndScreen.Result.LOSE;
+            } else { // PvAI
+                // Si el humano perdió por tiempo, LOSE; si la IA perdió por tiempo, WIN
+                boolean humanIsWhite = !(game.getWhitePlayer() instanceof AIPlayer);
+                boolean humanLost = (loser == PieceColor.WHITE && humanIsWhite) || (loser == PieceColor.BLACK && !humanIsWhite);
+                screenResult = humanLost ? GameEndScreen.Result.LOSE : GameEndScreen.Result.WIN;
+            }
+        } else if (result.isStalemate() || result.isInsufficientMaterial() || result.isThreefoldRepetition()) {
             screenResult = GameEndScreen.Result.DRAW;
         } else if (result.isCheckmate()) {
             if (isTwoPlayerMode) {
@@ -697,8 +722,7 @@ public class GameController {
         }
 
         javafx.stage.Stage owner = (javafx.stage.Stage) gameView.getRoot().getScene().getWindow();
-        String gameResultMessage = result.getGameResult();
-        
+
         // Create end screen with back to menu callback that delegates to GameView
         GameEndScreen endScreen = new GameEndScreen(owner, screenResult, gameResultMessage);
         endScreen.setOnBackToMenu(() -> {
