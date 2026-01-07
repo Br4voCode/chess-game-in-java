@@ -4,10 +4,14 @@ import chess.view.GameView;
 import chess.view.StartScreen;
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 public class Main extends Application {
     private Stage primaryStage;
+    private StackPane root;
+    private StartScreen startScreen;
+    private GameView currentGameView;
 
     @Override
     public void start(Stage primaryStage) {
@@ -15,7 +19,14 @@ public class Main extends Application {
         primaryStage.setTitle("Chess with JavaFX");
         primaryStage.setMinWidth(800);
         primaryStage.setMinHeight(600);
-        // Start in fullscreen
+        
+        // Crear el contenedor principal
+        root = new StackPane();
+        root.setStyle("-fx-background-color: #2b2b2b;");
+        
+        // Crear la Scene una sola vez con el contenedor principal
+        Scene scene = new Scene(root);
+        primaryStage.setScene(scene);
         primaryStage.setFullScreen(true);
 
         // Mostrar pantalla de inicio
@@ -25,34 +36,31 @@ public class Main extends Application {
     }
 
     private void showStartScreen() {
-        StartScreen startScreen = new StartScreen(
+        startScreen = new StartScreen(
                 this::startNewGame,
                 this::loadLastGame,
                 this::startNewTwoPlayerGame
         );
-        Scene scene = new Scene(startScreen.getRoot(), 800, 600);
-        primaryStage.setScene(scene);
+        root.getChildren().clear();
+        root.getChildren().add(startScreen.getRoot());
     }
 
     private void startNewGame() {
-        GameView gameView = new GameView();
-        Scene scene = new Scene(gameView.getRoot());
-        primaryStage.setScene(scene);
-        primaryStage.setFullScreen(true);
+        currentGameView = new GameView();
+        root.getChildren().clear();
+        root.getChildren().add(currentGameView.getRoot());
     }
 
     private void loadLastGame() {
-        GameView gameView = new GameView(true);
-        Scene scene = new Scene(gameView.getRoot());
-        primaryStage.setScene(scene);
-        primaryStage.setFullScreen(true);
+        currentGameView = new GameView(true);
+        root.getChildren().clear();
+        root.getChildren().add(currentGameView.getRoot());
     }
 
     private void startNewTwoPlayerGame() {
-        GameView gameView = new GameView(false, true);
-        Scene scene = new Scene(gameView.getRoot());
-        primaryStage.setScene(scene);
-        primaryStage.setFullScreen(true);
+        currentGameView = new GameView(false, true);
+        root.getChildren().clear();
+        root.getChildren().add(currentGameView.getRoot());
     }
 
     public static void main(String[] args) {
