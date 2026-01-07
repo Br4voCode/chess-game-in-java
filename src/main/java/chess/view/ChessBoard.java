@@ -199,6 +199,117 @@ public class ChessBoard {
 		animateSlidingMovement(fromSquare, toSquare, pieceSymbol, isCapture, onFinished);
 	}
 
+	public void animateMovesSimultaneously(Move move1, Move move2, Runnable onFinished) {
+		ChessSquare from1 = getSquare(move1.getFrom());
+		ChessSquare to1 = getSquare(move1.getTo());
+		ChessSquare from2 = getSquare(move2.getFrom());
+		ChessSquare to2 = getSquare(move2.getTo());
+
+		if (from1 == null || to1 == null || from2 == null || to2 == null) {
+			if (onFinished != null) onFinished.run();
+			return;
+		}
+
+		String pieceSymbol1 = !from1.isEmpty() ? from1.getPieceSymbol() : "";
+		String pieceSymbol2 = !from2.isEmpty() ? from2.getPieceSymbol() : "";
+
+		javafx.scene.Node node1 = null;
+		javafx.scene.Node node2 = null;
+
+		if (from1.isUsingImages() && from1.getPieceImageView() != null && from1.getPieceImageView().isVisible()) {
+			node1 = from1.getPieceImageView();
+		} else if (from1.getPieceLabel() != null && from1.getPieceLabel().isVisible()) {
+			node1 = from1.getPieceLabel();
+		} else {
+			node1 = from1.getRoot();
+		}
+
+		if (from2.isUsingImages() && from2.getPieceImageView() != null && from2.getPieceImageView().isVisible()) {
+			node2 = from2.getPieceImageView();
+		} else if (from2.getPieceLabel() != null && from2.getPieceLabel().isVisible()) {
+			node2 = from2.getPieceLabel();
+		} else {
+			node2 = from2.getRoot();
+		}
+
+		FadeTransition fadeOut1 = new FadeTransition(Duration.millis(300), node1);
+		FadeTransition fadeOut2 = new FadeTransition(Duration.millis(300), node2);
+
+		fadeOut1.setFromValue(1.0);
+		fadeOut1.setToValue(0.0);
+		fadeOut2.setFromValue(1.0);
+		fadeOut2.setToValue(0.0);
+
+		ParallelTransition parallelFadeOut = new ParallelTransition(fadeOut1, fadeOut2);
+		parallelFadeOut.setOnFinished(e -> {
+			from1.updateAppearance("", false, false, false);
+			from2.updateAppearance("", false, false, false);
+
+			to1.updateAppearance(pieceSymbol1, false, false, false);
+			to2.updateAppearance(pieceSymbol2, false, false, false);
+
+			final javafx.scene.Node nodeIn1;
+			final javafx.scene.Node nodeIn2;
+
+			if (to1.isUsingImages() && to1.getPieceImageView() != null) {
+				nodeIn1 = to1.getPieceImageView();
+				nodeIn1.setOpacity(0.0);
+			} else if (to1.getPieceLabel() != null) {
+				nodeIn1 = to1.getPieceLabel();
+				nodeIn1.setOpacity(0.0);
+			} else {
+				nodeIn1 = null;
+			}
+
+			if (to2.isUsingImages() && to2.getPieceImageView() != null) {
+				nodeIn2 = to2.getPieceImageView();
+				nodeIn2.setOpacity(0.0);
+			} else if (to2.getPieceLabel() != null) {
+				nodeIn2 = to2.getPieceLabel();
+				nodeIn2.setOpacity(0.0);
+			} else {
+				nodeIn2 = null;
+			}
+
+			FadeTransition fadeIn1 = null;
+			FadeTransition fadeIn2 = null;
+
+			if (nodeIn1 != null) {
+				fadeIn1 = new FadeTransition(Duration.millis(300), nodeIn1);
+				fadeIn1.setFromValue(0.0);
+				fadeIn1.setToValue(1.0);
+			}
+
+			if (nodeIn2 != null) {
+				fadeIn2 = new FadeTransition(Duration.millis(300), nodeIn2);
+				fadeIn2.setFromValue(0.0);
+				fadeIn2.setToValue(1.0);
+			}
+
+			if (fadeIn1 != null || fadeIn2 != null) {
+				ParallelTransition parallelFadeIn = new ParallelTransition();
+				if (fadeIn1 != null) parallelFadeIn.getChildren().add(fadeIn1);
+				if (fadeIn2 != null) parallelFadeIn.getChildren().add(fadeIn2);
+
+				parallelFadeIn.setOnFinished(ev -> {
+					if (nodeIn1 != null) nodeIn1.setOpacity(1.0);
+					if (nodeIn2 != null) nodeIn2.setOpacity(1.0);
+
+					if (onFinished != null) {
+						onFinished.run();
+					}
+				});
+				parallelFadeIn.play();
+			} else {
+				if (onFinished != null) {
+					onFinished.run();
+				}
+			}
+		});
+
+		parallelFadeOut.play();
+	}
+
 	/**
 	 * Animación de deslizamiento suave
 	 */
