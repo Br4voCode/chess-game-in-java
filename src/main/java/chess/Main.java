@@ -90,6 +90,7 @@ public class Main extends Application {
         loadTask.setOnSucceeded(event -> {
             try {
                 currentGameView = gameFactory.get();
+                currentGameView.setOnBackToMenu(this::showStartScreen);
                 root.getChildren().clear();
                 root.getChildren().add(currentGameView.getRoot());
             } catch (Exception ex) {

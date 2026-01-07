@@ -46,13 +46,19 @@ public final class GameEndScreen {
 	private final VBox card;
 	private final Confeti confeti;
 	private final String customMessage;
+	private Runnable onBackToMenu;
 
 	public GameEndScreen(Stage owner, Result result) {
 		this(owner, result, null);
 	}
 
 	public GameEndScreen(Stage owner, Result result, String customMessage) {
+		this(owner, result, customMessage, null);
+	}
+
+	public GameEndScreen(Stage owner, Result result, String customMessage, Runnable onBackToMenu) {
 		this.customMessage = customMessage;
+		this.onBackToMenu = onBackToMenu;
 		this.stage = new Stage(StageStyle.TRANSPARENT);
 		this.stage.initOwner(owner);
 		this.stage.initModality(Modality.WINDOW_MODAL);
@@ -108,6 +114,10 @@ public final class GameEndScreen {
 		return stage;
 	}
 
+	public void setOnBackToMenu(Runnable onBackToMenu) {
+		this.onBackToMenu = onBackToMenu;
+	}
+
 	private void applyVariant(Result result) {
 		card.getChildren().clear();
 
@@ -144,7 +154,22 @@ public final class GameEndScreen {
 						"-fx-text-fill: white;" +
 						"-fx-background-color: " + toRgbaCss(visual.accent.deriveColor(0, 1, 1, 0.95)) + ";");
 
-		HBox footer = new HBox(accept);
+		Button backToMenu = new Button("Back to Menu");
+		backToMenu.setOnAction(e -> {
+			close();
+			if (onBackToMenu != null) {
+				onBackToMenu.run();
+			}
+		});
+		backToMenu.setStyle(
+				"-fx-background-radius: 12;" +
+						"-fx-padding: 10 18;" +
+						"-fx-font-size: 14;" +
+						"-fx-font-weight: bold;" +
+						"-fx-text-fill: white;" +
+						"-fx-background-color: rgba(244, 67, 54, 0.95);");
+
+		HBox footer = new HBox(12, accept, backToMenu);
 		footer.setAlignment(Pos.CENTER);
 
 		Region accentBar = new Region();

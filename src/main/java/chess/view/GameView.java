@@ -45,9 +45,14 @@ public class GameView {
 
     private Button undoButton;
     private Button redoButton;
+    private Runnable onBackToMenu;
 
     public GameView() {
         this(GameSettings.humanVsAI(PieceColor.WHITE, GameSettings.DEFAULT_DEPTH));
+    }
+
+    public void setOnBackToMenu(Runnable onBackToMenu) {
+        this.onBackToMenu = onBackToMenu;
     }
 
     public GameView(PieceColor humanColor, int aiDepth) {
@@ -300,6 +305,13 @@ public class GameView {
 
         gameStateValue = new Label("In progress");
         gameStateValue.setStyle("-fx-font-size: 14px; -fx-text-fill: #4caf50;");
+        Button backToMenuButton = new Button("Back to Menu");
+        backToMenuButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold;");
+        backToMenuButton.setMaxWidth(Double.MAX_VALUE);
+        backToMenuButton.setOnAction(e -> {
+            handleBackToMenu();
+        });
+
         Pane spacer = new Pane();
         VBox.setVgrow(spacer, Priority.ALWAYS);
         panel.getChildren().addAll(
@@ -310,7 +322,8 @@ public class GameView {
                 new Pane(),
                 turnLabel, turnValue,
                 spacer,
-                gameStateLabel, gameStateValue);
+                gameStateLabel, gameStateValue,
+                backToMenuButton);
 
         return panel;
     }
@@ -638,5 +651,35 @@ public class GameView {
      */
     public boolean isAIVsAIMatchRunning() {
         return aiMatch != null && aiMatch.isRunning();
+    }
+
+    /**
+     * Handle back to menu action with proper game saving
+     */
+    public void handleBackToMenu() {
+        if (gameInstance != null) {
+            // Stop the game clock
+            gameInstance.stopClock();
+            
+            // Stop AI vs AI match if running
+            stopAIVsAIMatch();
+            
+            // Save the current game state
+            if (gameInstance.getStepHistory() != null && gameInstance.getStepHistoryStore() != null) {
+                // Update metadata with current timer state before saving
+                if (gameInstance.getStepHistoryStore().getGameMetadata() != null) {
+                    chess.history.GameMetadata.GameMode mode = gameInstance.getStepHistoryStore().getGameMetadata().getGameMode();
+                    long whiteTime = gameInstance.getGameClock().getWhiteTimeRemainingMillis();
+                    long blackTime = gameInstance.getGameClock().getBlackTimeRemainingMillis();
+                    gameInstance.getStepHistoryStore().setGameMetadata(new chess.history.GameMetadata(mode, whiteTime, blackTime));
+                }
+                gameInstance.getStepHistoryStore().saveApplied(gameInstance.getStepHistory());
+            }
+        }
+        
+        // Call the back to menu callback if set
+        if (onBackToMenu != null) {
+            onBackToMenu.run();
+        }
     }
 }

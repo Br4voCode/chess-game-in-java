@@ -597,7 +597,17 @@ public class GameController {
 
         javafx.stage.Stage owner = (javafx.stage.Stage) gameView.getRoot().getScene().getWindow();
         String gameResultMessage = result.getGameResult();
-        new GameEndScreen(owner, screenResult, gameResultMessage).show();
+        
+        // Create end screen with back to menu callback that delegates to GameView
+        GameEndScreen endScreen = new GameEndScreen(owner, screenResult, gameResultMessage);
+        endScreen.setOnBackToMenu(() -> {
+            javafx.application.Platform.runLater(() -> {
+                if (gameView != null) {
+                    gameView.handleBackToMenu();
+                }
+            });
+        });
+        endScreen.show();
     }
 
     private void animateCastling(Move kingMove, Runnable onFinished) {
