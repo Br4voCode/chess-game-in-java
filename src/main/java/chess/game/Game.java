@@ -338,4 +338,19 @@ public class Game {
     public void resumeClock() {
         gameClock.resume();
     }
+
+    /**
+     * Establece el estado final del juego manualmente
+     * Útil para terminar una partida desde el código (ej: en partidas IA vs IA)
+     *
+     * @param isOver si el juego ha terminado
+     * @param result el resultado del juego
+     */
+    public void setGameOver(boolean isOver, String result) {
+        this.gameOver = isOver;
+        this.gameResult = result;
+        if (isOver) {
+            stopClock();
+        }
+    }
 }

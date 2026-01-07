@@ -1,6 +1,7 @@
 package chess.view;
 
 import chess.controller.GameController;
+import chess.game.AIMatch;
 import chess.game.AIPlayer;
 import chess.game.Game;
 import chess.game.GameReconstructor;
@@ -13,11 +14,11 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 
 public class GameView {
@@ -37,18 +38,23 @@ public class GameView {
     private TimerBar whiteTimerBar;
     private Game gameInstance;
     private boolean shouldLoadHistory;
+    private AIMatch aiMatch;
 
     public GameView() {
-        this(false, false);
+        this(false, false, false);
     }
 
     public GameView(boolean loadFromHistory) {
-        this(loadFromHistory, false);
+        this(loadFromHistory, false, false);
     }
 
     public GameView(boolean loadFromHistory, boolean isPlayerVsPlayer) {
+        this(loadFromHistory, isPlayerVsPlayer, false);
+    }
+
+    public GameView(boolean loadFromHistory, boolean isPlayerVsPlayer, boolean isAIVsAI) {
         this.shouldLoadHistory = loadFromHistory;
-        initializeComponents(loadFromHistory, isPlayerVsPlayer);
+        initializeComponents(loadFromHistory, isPlayerVsPlayer, isAIVsAI);
         setupLayout();
         updateUIFromController(); // Forzar actualización inicial tras montar el layout
 
@@ -57,9 +63,14 @@ public class GameView {
         if (shouldLoadHistory && gameInstance != null && StartScreen.hasGameHistory()) {
             loadMoveHistoryToUI(gameInstance.getMoveHistory());
         }
+
+        // Iniciar partida IA vs IA si es necesario
+        if (isAIVsAI) {
+            startAIVsAIMatch();
+        }
     }
 
-    private void initializeComponents(boolean loadFromHistory, boolean isPlayerVsPlayer) {
+    private void initializeComponents(boolean loadFromHistory, boolean isPlayerVsPlayer, boolean isAIVsAI) {
         Game game;
 
         if (loadFromHistory && StartScreen.hasGameHistory()) {
@@ -70,9 +81,14 @@ public class GameView {
                     new AIPlayer(PieceColor.BLACK, 3));
         } else {
             // Crear nueva partida
-            if (isPlayerVsPlayer) {
+            if (isAIVsAI) {
+                // IA vs IA
+                game = new Game(new AIPlayer(PieceColor.WHITE, 3), new AIPlayer(PieceColor.BLACK, 3));
+            } else if (isPlayerVsPlayer) {
+                // Humano vs Humano
                 game = new Game(new HumanPlayer(), new HumanPlayer());
             } else {
+                // Humano vs IA
                 game = new Game(new HumanPlayer(), new AIPlayer(PieceColor.BLACK, 3));
             }
         }
@@ -80,7 +96,7 @@ public class GameView {
         this.gameInstance = game;
         this.chessBoard = new ChessBoard();
         this.statusBar = new StatusBar();
-        this.controller = new GameController(game, chessBoard, statusBar, isPlayerVsPlayer);
+        this.controller = new GameController(game, chessBoard, statusBar, isPlayerVsPlayer, isAIVsAI);
         this.controller.setGameView(this);
 
         this.chessBoard.setSquareClickListener(controller::onSquareClicked);
@@ -392,5 +408,52 @@ public class GameView {
 
             addMoveToHistoryWithColor(moveNotation, color);
         }
+    }
+
+    /**
+     * بدء مباراة آلية بين ذكاءين اصطناعيين
+     */
+    private void startAIVsAIMatch() {
+        if (gameInstance == null || !(gameInstance.getWhitePlayer() instanceof AIPlayer) ||
+                !(gameInstance.getBlackPlayer() instanceof AIPlayer)) {
+            return;
+        }
+
+        AIPlayer whiteAI = (AIPlayer) gameInstance.getWhitePlayer();
+        AIPlayer blackAI = (AIPlayer) gameInstance.getBlackPlayer();
+
+        aiMatch = new AIMatch(gameInstance, whiteAI, blackAI);
+        aiMatch.setDelayBetweenMoves(1500); // 1.5 ثانية بين الحركات
+
+        // callback عند انتهاء المباراة
+        aiMatch.setOnGameOver(() -> {
+            updateUIFromController();
+            statusBar.setStatus("مباراة ذكاء اصطناعي - انتهت اللعبة: " + gameInstance.getGameResult());
+        });
+
+        // callback لتنفيذ كل حركة مع الرسوم المتحركة
+        aiMatch.setOnMoveExecuted((move) -> {
+            controller.executeMoveWithAnimation(move);
+        });
+
+        // بدء المباراة
+        new Thread(() -> aiMatch.startMatch()).start();
+    }
+
+    /**
+     * إيقاف مباراة ذكاء اصطناعي حالية
+     */
+    public void stopAIVsAIMatch() {
+        if (aiMatch != null) {
+            aiMatch.stopMatch();
+            aiMatch = null;
+        }
+    }
+
+    /**
+     * التحقق من ما إذا كانت مباراة ذكاء اصطناعي قيد التشغيل
+     */
+    public boolean isAIVsAIMatchRunning() {
+        return aiMatch != null && aiMatch.isRunning();
     }
 }

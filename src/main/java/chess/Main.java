@@ -39,7 +39,8 @@ public class Main extends Application {
         startScreen = new StartScreen(
                 this::startNewGame,
                 this::loadLastGame,
-                this::startNewTwoPlayerGame
+                this::startNewTwoPlayerGame,
+                this::startNewAIVsAIGame
         );
         root.getChildren().clear();
         root.getChildren().add(startScreen.getRoot());
@@ -59,6 +60,12 @@ public class Main extends Application {
 
     private void startNewTwoPlayerGame() {
         currentGameView = new GameView(false, true);
+        root.getChildren().clear();
+        root.getChildren().add(currentGameView.getRoot());
+    }
+
+    private void startNewAIVsAIGame() {
+        currentGameView = new GameView(false, false, true);
         root.getChildren().clear();
         root.getChildren().add(currentGameView.getRoot());
     }
