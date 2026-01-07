@@ -1,16 +1,21 @@
 package chess.view;
 
 import chess.controller.GameController;
-import chess.game.Game;
-import chess.game.HumanPlayer;
 import chess.game.AIPlayer;
+import chess.game.Game;
+import chess.game.GameReconstructor;
+import chess.game.HumanPlayer;
 import chess.model.PieceColor;
 import chess.view.components.StatusBar;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.layout.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 
 public class GameView {
     private BorderPane root;
@@ -26,18 +31,39 @@ public class GameView {
     private VBox movesBox;
 
     public GameView() {
-        initializeComponents();
+        this(false);
+    }
+
+    public GameView(boolean loadFromHistory) {
+        initializeComponents(loadFromHistory);
         setupLayout();
     }
 
-    private void initializeComponents() {
-        Game game = new Game(new HumanPlayer(), new AIPlayer(PieceColor.BLACK, 3));
+    private void initializeComponents(boolean loadFromHistory) {
+        Game game;
+        
+        if (loadFromHistory && StartScreen.hasGameHistory()) {
+            // Cargar partida anterior
+            game = GameReconstructor.reconstructGameFromHistory(
+                    StartScreen.getHistoryFilePath(),
+                    new HumanPlayer(),
+                    new AIPlayer(PieceColor.BLACK, 3)
+            );
+        } else {
+            // Crear nueva partida
+            game = new Game(new HumanPlayer(), new AIPlayer(PieceColor.BLACK, 3));
+        }
         
         this.chessBoard = new ChessBoard();
         this.statusBar = new StatusBar();
         this.controller = new GameController(game, chessBoard, statusBar);
         
         this.chessBoard.setSquareClickListener(controller::onSquareClicked);
+        
+        // Imprimir el historial al iniciar el juego
+        System.out.println("\n=== INICIO DEL JUEGO ===");
+        System.out.println(game.getMoveHistory().toString());
+        System.out.println("========================\n");
     }
 
     private void setupLayout() {

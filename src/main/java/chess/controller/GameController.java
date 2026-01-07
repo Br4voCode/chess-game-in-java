@@ -1,14 +1,18 @@
 package chess.controller;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import chess.game.Game;
-import chess.model.*;
+import chess.model.Board;
+import chess.model.Move;
+import chess.model.Piece;
+import chess.model.PieceColor;
+import chess.model.Position;
 import chess.view.ChessBoard;
 import chess.view.components.StatusBar;
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Controlador que maneja la lógica de interacción entre la vista y el modelo
@@ -307,12 +311,12 @@ public class GameController {
     }
     
     public void resetGame() {
-        game.reset();
+        game.resetForNewGame();
         selectedPosition = null;
         isAnimating = false;
         chessBoard.clearHighlights();
         updateUI();
-        statusBar.setStatus("Game reset. " + game.getTurn() + " to move.");
+        statusBar.setStatus("New game started. " + game.getTurn() + " to move.");
     }
     
     public Position getSelectedPosition() {

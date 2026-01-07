@@ -1,6 +1,9 @@
 package chess.model;
 
-public class Move {
+import java.io.Serializable;
+
+public class Move implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final Position from;
     private final Position to;
     private final Piece promotion; // optional piece when pawn promotes (null means promote to queen by default)
