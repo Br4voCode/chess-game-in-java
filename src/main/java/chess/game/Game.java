@@ -116,6 +116,15 @@ public class Game {
         if (shouldSaveMoves) {
             Step step = buildStepForAppliedMove(m, moverBefore, lastCapturedPiece, enPassantBefore, enPassantAfter);
             stepHistory.recordApplied(step);
+            
+            // Update metadata with current timer state before saving
+            if (stepHistoryStore.getGameMetadata() != null) {
+                chess.history.GameMetadata.GameMode mode = stepHistoryStore.getGameMetadata().getGameMode();
+                long whiteTime = gameClock.getWhiteTimeRemainingMillis();
+                long blackTime = gameClock.getBlackTimeRemainingMillis();
+                stepHistoryStore.setGameMetadata(new chess.history.GameMetadata(mode, whiteTime, blackTime));
+            }
+            
             stepHistoryStore.saveApplied(stepHistory);
         }
 
@@ -362,7 +371,9 @@ public class Game {
      * @param gameMode el modo de juego (PVP, PVAI, AIVAI)
      */
     public void setGameMode(chess.history.GameMetadata.GameMode gameMode) {
-        chess.history.GameMetadata metadata = new chess.history.GameMetadata(gameMode);
+        long whiteTime = gameClock.getWhiteTimeRemainingMillis();
+        long blackTime = gameClock.getBlackTimeRemainingMillis();
+        chess.history.GameMetadata metadata = new chess.history.GameMetadata(gameMode, whiteTime, blackTime);
         this.stepHistoryStore.setGameMetadata(metadata);
     }
 
