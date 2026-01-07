@@ -37,6 +37,7 @@ public class ChessSquare {
 	private final Color POSSIBLE_MOVE_DOT_COLOR = Color.rgb(100, 100, 100, 0.6);
 	private final Color CAPTURE_INDICATOR_COLOR = Color.rgb(255, 100, 100, 0.8);
 	private final Color MOVE_HIGHLIGHT_COLOR = Color.rgb(255, 255, 0, 0.4);
+	private final Color HINT_HIGHLIGHT_COLOR = Color.rgb(0, 255, 255, 0.4);
 
 	// Efectos
 	private InnerShadow innerGlow;
@@ -487,6 +488,21 @@ public class ChessSquare {
 			highlightGlow.setColor(Color.YELLOW);
 			highlightGlow.setRadius(15);
 			background.setEffect(highlightGlow);
+		});
+	}
+
+	public void highlightAsHint() {
+		javafx.application.Platform.runLater(() -> {
+			// Usar el selectionOverlay para mostrar un tinte cian
+			selectionOverlay.setFill(HINT_HIGHLIGHT_COLOR);
+			selectionOverlay.setVisible(true);
+			selectionOverlay.setOpacity(1.0);
+
+			// Agregar un brillo cian
+			InnerShadow hintGlow = new InnerShadow();
+			hintGlow.setColor(Color.CYAN);
+			hintGlow.setRadius(15);
+			background.setEffect(hintGlow);
 		});
 	}
 

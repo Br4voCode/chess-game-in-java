@@ -154,6 +154,13 @@ public class GameView {
             updateUIFromController();
         });
 
+        Button hintButton = new Button("Hint");
+        hintButton.setStyle("-fx-background-color: #2196f3; -fx-text-fill: white; -fx-font-weight: bold;");
+        hintButton.setMaxWidth(Double.MAX_VALUE);
+        hintButton.setOnAction(e -> {
+            controller.hintButton();
+        });
+
         // Información del turno
         Label turnLabel = new Label("Current turn:");
         turnLabel.setStyle("-fx-text-fill: #bbbbbb;");
@@ -172,6 +179,7 @@ public class GameView {
         panel.getChildren().addAll(
                 panelTitle,
                 newGameButton,
+                hintButton,
                 new Pane(), // Espaciador
                 turnLabel, turnValue,
                 spacer,

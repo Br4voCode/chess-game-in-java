@@ -507,15 +507,33 @@ public class GameController {
         return isAIVsAIMode;
     }
 
-    public void highlightLastMove() {
-        Move lastMove = game.getBoard().getLastMove();
-        if (lastMove != null) {
-            chessBoard.highlightMove(lastMove);
-            statusBar.setStatus("Resaltando último movimiento: " +
-                    positionToChessNotation(lastMove.getFrom()) + " -> " +
-                    positionToChessNotation(lastMove.getTo()));
-        } else {
-            statusBar.setStatus("No hay movimientos para resaltar.");
-        }
+    public void hintButton() {
+        if (isAnimating)
+            return;
+
+        statusBar.setStatus("Calculando pista...");
+
+        // Usar un hilo separado para no bloquear la UI
+        new Thread(() -> {
+            Move hint = bestMove();
+
+            javafx.application.Platform.runLater(() -> {
+                if (hint != null) {
+                    chessBoard.highlightHint(hint);
+                    statusBar.setStatus("Pista: " +
+                            positionToChessNotation(hint.getFrom()) + " -> " +
+                            positionToChessNotation(hint.getTo()));
+                } else {
+                    statusBar.setStatus("No se encontró ninguna pista.");
+                }
+            });
+        }).start();
+    }
+
+    public Move bestMove() {
+        // Usar un IA temporal con profundidad 3 para calcular la mejor jugada
+        // independientemente de si el jugador es humano o IA
+        chess.game.AIPlayer hintAI = new chess.game.AIPlayer(game.getTurn(), 3);
+        return hintAI.chooseMove(game.getBoard());
     }
 }
