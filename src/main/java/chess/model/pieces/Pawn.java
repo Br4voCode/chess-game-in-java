@@ -53,7 +53,29 @@ public class Pawn extends Piece {
             }
         }
 
-        // Note: en-passant omitted in this simplified version
+        // en passant
+        Move lastMove = board.getLastMove();
+        if (lastMove != null) {
+            Piece lastMovedPiece = board.getPieceAt(lastMove.getTo());
+            if (lastMovedPiece != null && lastMovedPiece.getType() == PieceType.PAWN && 
+                lastMovedPiece.getColor() != color) {
+                int lastMoveFromRow = lastMove.getFrom().getRow();
+                int lastMoveToRow = lastMove.getTo().getRow();
+                int lastMoveToCol = lastMove.getTo().getCol();
+                
+                // Check if last move was a two-square pawn advance
+                if (Math.abs(lastMoveFromRow - lastMoveToRow) == 2) {
+                    // Check if our pawn is adjacent to the enemy pawn
+                    if (pos.getRow() == lastMoveToRow && Math.abs(pos.getCol() - lastMoveToCol) == 1) {
+                        Position enPassantTarget = new Position(pos.getRow() + dir, lastMoveToCol);
+                        if (enPassantTarget.isValid()) {
+                            moves.add(new Move(pos, enPassantTarget, null, true));
+                        }
+                    }
+                }
+            }
+        }
+
         return moves;
     }
 }

@@ -75,6 +75,15 @@ public class Board {
         // Capture the piece at the destination (if any)
         Piece capturedPiece = getPieceAt(to);
         
+        // Handle en passant capture
+        if (move.isEnPassant() && p.getType() == PieceType.PAWN) {
+            int capturedPawnRow = from.getRow();
+            int capturedPawnCol = to.getCol();
+            Position capturedPawnPos = new Position(capturedPawnRow, capturedPawnCol);
+            capturedPiece = getPieceAt(capturedPawnPos);
+            setPieceAt(capturedPawnPos, null);
+        }
+        
         if (p.getType() == PieceType.KING) {
             if (from.getRow() == to.getRow() && Math.abs(from.getCol() - to.getCol()) == 2) {
                 handleCastling(from, to, p.getColor());
@@ -434,6 +443,9 @@ public class Board {
      * Check if the move is a capture move
      */
     public boolean isCaptureMove(Move move) {
+        if (move.isEnPassant()) {
+            return true;
+        }
         Piece targetPiece = getPieceAt(move.getTo());
         return targetPiece != null;
     }
