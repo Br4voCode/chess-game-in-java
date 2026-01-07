@@ -17,6 +17,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 
 public class GameView {
@@ -28,8 +29,8 @@ public class GameView {
     // Referencias a componentes de UI para actualización
     private Label turnValue;
     private Label gameStateValue;
-    private VBox whiteCapturedBox;
-    private VBox blackCapturedBox;
+    private FlowPane whiteCapturedBox;
+    private FlowPane blackCapturedBox;
     private VBox movesBox;
      // Timer components
     private TimerBar blackTimerBar;
@@ -175,21 +176,21 @@ public class GameView {
         panelTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
 
         // Piezas capturadas
-        Label whiteCapturedTitle = new Label("White captured:");
+        Label whiteCapturedTitle = new Label("White captures:");
         whiteCapturedTitle.setStyle("-fx-text-fill: #bbbbbb;");
 
-        whiteCapturedBox = new VBox(5);
+        whiteCapturedBox = new FlowPane(5, 5);
         whiteCapturedBox.setStyle("-fx-background-color: #2b2b2b; -fx-padding: 10; -fx-background-radius: 3;");
         whiteCapturedBox.setPrefHeight(100);
-        VBox.setVgrow(whiteCapturedBox, Priority.ALWAYS);
+        whiteCapturedBox.setMaxWidth(Double.MAX_VALUE);
         
-        Label blackCapturedTitle = new Label("Black captured:");
+        Label blackCapturedTitle = new Label("Black captures:");
         blackCapturedTitle.setStyle("-fx-text-fill: #bbbbbb;");
 
-        blackCapturedBox = new VBox(5);
+        blackCapturedBox = new FlowPane(5, 5);
         blackCapturedBox.setStyle("-fx-background-color: #2b2b2b; -fx-padding: 10; -fx-background-radius: 3;");
         blackCapturedBox.setPrefHeight(100);
-        VBox.setVgrow(blackCapturedBox, Priority.ALWAYS);
+        blackCapturedBox.setMaxWidth(Double.MAX_VALUE);
         
         // Historial de movimientos
         Label movesTitle = new Label("Move history:");
@@ -325,11 +326,11 @@ public class GameView {
     public void addCapturedPiece(String pieceSymbol, boolean isWhitePiece) {
         // White pieces are captured by black, so they go in black's captured box
         // Black pieces are captured by white, so they go in white's captured box
-        VBox targetBox = isWhitePiece ? blackCapturedBox : whiteCapturedBox;
+        FlowPane targetBox = isWhitePiece ? blackCapturedBox : whiteCapturedBox;
         if (targetBox != null) {
             Label pieceLabel = new Label(pieceSymbol);
             pieceLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: " +
-                    (isWhitePiece ? "white" : "#bbbbbb") + ";");
+                    (isWhitePiece ? "white" : "black") + ";");
             targetBox.getChildren().add(pieceLabel);
         }
     }
