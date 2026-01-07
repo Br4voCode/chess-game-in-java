@@ -1,5 +1,8 @@
 package chess;
 
+import chess.game.GameSettings;
+import chess.game.GameSettingsStore;
+import chess.model.PieceColor;
 import chess.view.GameView;
 import chess.view.PieceImageLoader;
 import chess.view.StartScreen;
@@ -35,7 +38,7 @@ public class Main extends Application {
 
     private void showStartScreen() {
         startScreen = new StartScreen(
-                this::startNewGame,
+            this::startNewGame,
                 this::loadLastGame,
                 this::startNewTwoPlayerGame,
                 this::startNewAIVsAIGame);
@@ -43,26 +46,36 @@ public class Main extends Application {
         root.getChildren().add(startScreen.getRoot());
     }
 
-    private void startNewGame() {
-        currentGameView = new GameView();
+    private void startNewGame(PieceColor humanColor, int aiDepth) {
+        GameSettings settings = GameSettings.humanVsAI(humanColor, aiDepth);
+        GameSettingsStore.save(settings);
+        currentGameView = new GameView(settings);
         root.getChildren().clear();
         root.getChildren().add(currentGameView.getRoot());
     }
 
     private void loadLastGame() {
-        currentGameView = new GameView(true);
+        GameSettings settings = GameSettingsStore.loadOrDefault();
+        currentGameView = new GameView(true, settings);
         root.getChildren().clear();
         root.getChildren().add(currentGameView.getRoot());
     }
 
     private void startNewTwoPlayerGame() {
-        currentGameView = new GameView(false, true);
+        GameSettings settings = GameSettings.twoPlayers();
+        GameSettingsStore.save(settings);
+        currentGameView = new GameView(settings);
         root.getChildren().clear();
         root.getChildren().add(currentGameView.getRoot());
     }
 
     private void startNewAIVsAIGame() {
-        currentGameView = new GameView(false, false, true);
+        GameSettings stored = GameSettingsStore.loadOrDefault();
+        GameSettings settings = stored.isAIVsAI()
+                ? stored
+                : GameSettings.aiVsAi(stored.getAiDepth());
+        GameSettingsStore.save(settings);
+        currentGameView = new GameView(settings);
         root.getChildren().clear();
         root.getChildren().add(currentGameView.getRoot());
     }
