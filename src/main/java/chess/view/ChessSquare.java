@@ -1,6 +1,10 @@
 package chess.view;
 
 import chess.model.Position;
+import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
+import javafx.animation.ScaleTransition;
+import javafx.beans.binding.Bindings;
 import javafx.scene.control.Label;
 import javafx.scene.effect.InnerShadow;
 import javafx.scene.image.Image;
@@ -10,9 +14,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.StrokeType;
-import javafx.animation.FadeTransition;
-import javafx.animation.ScaleTransition;
-import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
 /**
@@ -35,6 +36,8 @@ public class ChessSquare {
 	private final Color SELECTION_TINT = Color.rgb(144, 238, 144, 0.3);
 	private final Color POSSIBLE_MOVE_DOT_COLOR = Color.rgb(100, 100, 100, 0.6);
 	private final Color CAPTURE_INDICATOR_COLOR = Color.rgb(255, 100, 100, 0.8);
+	private final Color MOVE_HIGHLIGHT_COLOR = Color.rgb(255, 255, 0, 0.4);
+	private final Color HINT_HIGHLIGHT_COLOR = Color.rgb(0, 255, 255, 0.4);
 
 	// Efectos
 	private InnerShadow innerGlow;
@@ -54,31 +57,54 @@ public class ChessSquare {
 
 	private void initializeSquare() {
 		root = new StackPane();
-		root.setPrefSize(60, 60);
+		root.setMinSize(1, 1);
+		root.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
 		// Fondo de la casilla
-		background = new Rectangle(60, 60);
-		background.setArcWidth(6);
-		background.setArcHeight(6);
+		background = new Rectangle();
+		background.widthProperty().bind(root.widthProperty());
+		background.heightProperty().bind(root.heightProperty());
+		background.arcWidthProperty().bind(
+				Bindings.createDoubleBinding(
+						() -> Math.min(12, Math.max(4, Math.min(root.getWidth(), root.getHeight()) * 0.12)),
+						root.widthProperty(),
+						root.heightProperty()));
+		background.arcHeightProperty().bind(background.arcWidthProperty());
 
 		// Capa de selección (inicialmente invisible)
-		selectionOverlay = new Rectangle(60, 60);
-		selectionOverlay.setArcWidth(6);
-		selectionOverlay.setArcHeight(6);
+		selectionOverlay = new Rectangle();
+		selectionOverlay.widthProperty().bind(root.widthProperty());
+		selectionOverlay.heightProperty().bind(root.heightProperty());
+		selectionOverlay.arcWidthProperty().bind(background.arcWidthProperty());
+		selectionOverlay.arcHeightProperty().bind(background.arcHeightProperty());
 		selectionOverlay.setFill(Color.TRANSPARENT);
 		selectionOverlay.setVisible(false);
 
 		// Indicador de movimiento posible
-		possibleMoveIndicator = new Circle(7);
+		possibleMoveIndicator = new Circle();
+		possibleMoveIndicator.radiusProperty().bind(
+				Bindings.createDoubleBinding(
+						() -> Math.max(3, Math.min(root.getWidth(), root.getHeight()) * 0.12),
+						root.widthProperty(),
+						root.heightProperty()));
 		possibleMoveIndicator.setFill(POSSIBLE_MOVE_DOT_COLOR);
 		possibleMoveIndicator.setVisible(false);
 		possibleMoveIndicator.setOpacity(0);
 
 		// Indicador de captura
-		captureIndicator = new Circle(25);
+		captureIndicator = new Circle();
+		captureIndicator.radiusProperty().bind(
+				Bindings.createDoubleBinding(
+						() -> Math.max(10, Math.min(root.getWidth(), root.getHeight()) * 0.42),
+						root.widthProperty(),
+						root.heightProperty()));
 		captureIndicator.setFill(Color.TRANSPARENT);
 		captureIndicator.setStroke(CAPTURE_INDICATOR_COLOR);
-		captureIndicator.setStrokeWidth(3);
+		captureIndicator.strokeWidthProperty().bind(
+				Bindings.createDoubleBinding(
+						() -> Math.min(4, Math.max(2, Math.min(root.getWidth(), root.getHeight()) * 0.06)),
+						root.widthProperty(),
+						root.heightProperty()));
 		captureIndicator.setStrokeType(StrokeType.OUTSIDE);
 		captureIndicator.setVisible(false);
 		captureIndicator.setScaleX(0);
@@ -87,25 +113,40 @@ public class ChessSquare {
 		// Label para texto
 		pieceLabel = new Label();
 		pieceLabel.setStyle("-fx-font-size: 28; -fx-font-weight: bold;");
+		root.widthProperty().addListener((obs, oldV, newV) -> updatePieceSizing());
+		root.heightProperty().addListener((obs, oldV, newV) -> updatePieceSizing());
 
 		// ImageView para piezas con imágenes
 		pieceImageView = new ImageView();
-		pieceImageView.setFitWidth(50);
-		pieceImageView.setFitHeight(50);
+		pieceImageView.fitWidthProperty().bind(
+				Bindings.createDoubleBinding(
+						() -> Math.max(16, Math.min(root.getWidth(), root.getHeight()) * 0.82),
+						root.widthProperty(),
+						root.heightProperty()));
+		pieceImageView.fitHeightProperty().bind(pieceImageView.fitWidthProperty());
 		pieceImageView.setPreserveRatio(true);
 		pieceImageView.setVisible(false);
 
 		// Orden de renderizado: fondo, overlay, indicadores, pieza
 		root.getChildren().addAll(
-				background, 
+				background,
 				selectionOverlay,
-				possibleMoveIndicator, 
+				possibleMoveIndicator,
 				captureIndicator,
-				pieceLabel, 
-				pieceImageView
-				);
+				pieceLabel,
+				pieceImageView);
 
 		updateBaseColor();
+		updatePieceSizing();
+	}
+
+	private void updatePieceSizing() {
+		double size = Math.min(root.getWidth(), root.getHeight());
+		if (size <= 0) {
+			return;
+		}
+		int fontSize = (int) Math.max(12, Math.min(48, size * 0.55));
+		pieceLabel.setStyle("-fx-font-size: " + fontSize + "; -fx-font-weight: bold;");
 	}
 
 	private void setupEffectsAndAnimations() {
@@ -122,44 +163,44 @@ public class ChessSquare {
 	}
 
 	private void updateBaseColor() {
-	    javafx.application.Platform.runLater(() -> {
-	        Color baseColor = (position.getRow() + position.getCol()) % 2 == 0 ? LIGHT_COLOR : DARK_COLOR;
-	        background.setFill(baseColor);
-	        background.setEffect(null);
-	        
-	        if (selectionOverlay != null) {
-	            selectionOverlay.setVisible(false);
-	            selectionOverlay.setFill(Color.TRANSPARENT);
-	        }
-	    });
+		javafx.application.Platform.runLater(() -> {
+			Color baseColor = (position.getRow() + position.getCol()) % 2 == 0 ? LIGHT_COLOR : DARK_COLOR;
+			background.setFill(baseColor);
+			background.setEffect(null);
+
+			if (selectionOverlay != null) {
+				selectionOverlay.setVisible(false);
+				selectionOverlay.setFill(Color.TRANSPARENT);
+			}
+		});
 	}
 
-	public void updateAppearance(String pieceSymbol, boolean isSelected, 
-	        boolean isPossibleMove, boolean isCaptureMove) {
-	    
-	    // Guardar el símbolo de la pieza
-	    if (pieceSymbol != null) {
-	        currentPieceSymbol = pieceSymbol;
-	    }
-	    
-	    // Actualizar pieza PRIMERO
-	    updatePieceRepresentation(pieceSymbol);
-	    
-	    // Manejar selección y movimientos
-	    handleSelection(isSelected);
-	    handlePossibleMoves(isPossibleMove, isCaptureMove);
-	    
-	    // Solo restaurar color base si NO está seleccionada y NO es movimiento posible
-	    // y NO tiene ningún highlight activo
-	    if (!isSelected && !isPossibleMove && !isSelected) {
-	        updateBaseColor();
-	    }
+	public void updateAppearance(String pieceSymbol, boolean isSelected,
+			boolean isPossibleMove, boolean isCaptureMove) {
+
+		// Guardar el símbolo de la pieza
+		if (pieceSymbol != null) {
+			currentPieceSymbol = pieceSymbol;
+		}
+
+		// Actualizar pieza PRIMERO
+		updatePieceRepresentation(pieceSymbol);
+
+		// Manejar selección y movimientos
+		handleSelection(isSelected);
+		handlePossibleMoves(isPossibleMove, isCaptureMove);
+
+		// Solo restaurar color base si NO está seleccionada y NO es movimiento posible
+		// (incluyendo capturas). Si hay highlight activo, no resetear el fondo.
+		if (!isSelected && !isPossibleMove && !isCaptureMove) {
+			updateBaseColor();
+		}
 	}
 
 	private void updatePieceRepresentation(String pieceSymbol) {
 		// Siempre ocultar el label de texto
 		pieceLabel.setVisible(false);
-		
+
 		if (pieceSymbol == null || pieceSymbol.isEmpty()) {
 			pieceImageView.setVisible(false);
 		} else {
@@ -171,10 +212,11 @@ public class ChessSquare {
 	private void loadPieceImage(String pieceSymbol) {
 		String imageName = getImageName(pieceSymbol);
 		String imagePath = String.format("/images/pieces/%s/%s.png", pieceSet, imageName);
-		
+
 		// Debug: imprimir información
-		System.out.println("DEBUG: Cargando pieza - Símbolo: '" + pieceSymbol + "' -> Imagen: '" + imageName + "' -> Ruta: '" + imagePath + "'");
-		
+		System.out.println("DEBUG: Cargando pieza - Símbolo: '" + pieceSymbol + "' -> Imagen: '" + imageName
+				+ "' -> Ruta: '" + imagePath + "'");
+
 		try {
 			Image image = new Image(getClass().getResourceAsStream(imagePath));
 			if (image.isError()) {
@@ -191,40 +233,53 @@ public class ChessSquare {
 	}
 
 	private String getImageName(String pieceSymbol) {
-		// Mapear símbolos directamente a nombres de archivo
+		// Map Unicode chess symbols to image file names
 		switch (pieceSymbol) {
-			// Piezas blancas (mayúsculas)
-			case "K": return "white_king";
-			case "Q": return "white_queen";
-			case "R": return "white_rook";
-			case "B": return "white_bishop";
-			case "N": return "white_knight";
-			case "P": return "white_pawn";
-			
-			// Piezas negras (minúsculas)
-			case "k": return "black_king";
-			case "q": return "black_queen";
-			case "r": return "black_rook";
-			case "b": return "black_bishop";
-			case "n": return "black_knight";
-			case "p": return "black_pawn";
-			
-			default: 
-				System.err.println("WARN: Símbolo de pieza desconocido: '" + pieceSymbol + "'");
+			// White pieces (Unicode symbols)
+			case "♔":
+				return "white_king";
+			case "♕":
+				return "white_queen";
+			case "♖":
+				return "white_rook";
+			case "♗":
+				return "white_bishop";
+			case "♘":
+				return "white_knight";
+			case "♙":
+				return "white_pawn";
+
+			// Black pieces (Unicode symbols)
+			case "♚":
+				return "black_king";
+			case "♛":
+				return "black_queen";
+			case "♜":
+				return "black_rook";
+			case "♝":
+				return "black_bishop";
+			case "♞":
+				return "black_knight";
+			case "♟":
+				return "black_pawn";
+
+			default:
+				System.err.println("WARN: Unknown piece symbol: '" + pieceSymbol + "'");
 				return "white_pawn"; // Fallback
 		}
 	}
 
 	private void handleSelection(boolean shouldBeSelected) {
-	    if (this.isSelected != shouldBeSelected) {
-	        if (shouldBeSelected) {
-	            selectSquare();
-	        } else {
-	            deselectSquare();
-	        }
-	        this.isSelected = shouldBeSelected;
-	    }
+		if (this.isSelected != shouldBeSelected) {
+			if (shouldBeSelected) {
+				selectSquare();
+			} else {
+				deselectSquare();
+			}
+			this.isSelected = shouldBeSelected;
+		}
 	}
+
 	private void selectSquare() {
 		if (innerGlow != null) {
 			background.setEffect(innerGlow);
@@ -244,81 +299,82 @@ public class ChessSquare {
 
 		Color baseColor = (position.getRow() + position.getCol()) % 2 == 0 ? LIGHT_COLOR : DARK_COLOR;
 		Color selectedColor = Color.rgb(
-				(int)(baseColor.getRed() * 255 * 0.9),
-				(int)(baseColor.getGreen() * 255 * 0.9),
-				(int)(baseColor.getBlue() * 255 * 0.9)
-				);
+				(int) (baseColor.getRed() * 255 * 0.9),
+				(int) (baseColor.getGreen() * 255 * 0.9),
+				(int) (baseColor.getBlue() * 255 * 0.9));
 		background.setFill(selectedColor);
 	}
 
 	private void deselectSquare() {
-	    // 1. Detener TODAS las animaciones inmediatamente
-	    stopAllAnimations();
-	    
-	    // 2. Cancelar transiciones pendientes
-	    cancelPendingTransitions();
-	    
-	    // 3. Limpiar efectos visuales inmediatamente
-	    background.setEffect(null);
-	    
-	    // 4. Restaurar color base SIN animación (inmediato)
-	    Color baseColor = (position.getRow() + position.getCol()) % 2 == 0 ? LIGHT_COLOR : DARK_COLOR;
-	    background.setFill(baseColor);
-	    
-	    // 5. Ocultar overlay con fade out rápido
-	    if (selectionOverlay != null && selectionOverlay.isVisible()) {
-	        // Cancelar animaciones previas
-	        FadeTransition previousFade = (FadeTransition) selectionOverlay.getProperties().get("currentFade");
-	        if (previousFade != null) {
-	            previousFade.stop();
-	        }
-	        
-	        FadeTransition fadeOut = new FadeTransition(Duration.millis(150), selectionOverlay);
-	        selectionOverlay.getProperties().put("currentFade", fadeOut);
-	        
-	        fadeOut.setFromValue(selectionOverlay.getOpacity());
-	        fadeOut.setToValue(0.0);
-	        fadeOut.setOnFinished(e -> {
-	            selectionOverlay.setVisible(false);
-	            selectionOverlay.setFill(Color.TRANSPARENT);
-	            selectionOverlay.setOpacity(1.0);
-	            selectionOverlay.getProperties().remove("currentFade");
-	        });
-	        fadeOut.play();
-	    } else {
-	        selectionOverlay.setVisible(false);
-	        selectionOverlay.setFill(Color.TRANSPARENT);
-	    }
-	    
-	    // 6. Asegurar que las piezas no tengan escala residual
-	    if (pieceImageView != null) {
-	        pieceImageView.setScaleX(1.0);
-	        pieceImageView.setScaleY(1.0);
-	        pieceImageView.setOpacity(1.0);
-	    }
-	    
-	    if (pieceLabel != null) {
-	        pieceLabel.setScaleX(1.0);
-	        pieceLabel.setScaleY(1.0);
-	        pieceLabel.setOpacity(1.0);
-	    }
+		// 1. Detener TODAS las animaciones inmediatamente
+		stopAllAnimations();
+
+		// 2. Cancelar transiciones pendientes
+		cancelPendingTransitions();
+
+		// 3. Limpiar efectos visuales inmediatamente
+		background.setEffect(null);
+
+		// 4. Restaurar color base SIN animación (inmediato)
+		Color baseColor = (position.getRow() + position.getCol()) % 2 == 0 ? LIGHT_COLOR : DARK_COLOR;
+		background.setFill(baseColor);
+
+		// 5. Ocultar overlay con fade out rápido
+		if (selectionOverlay != null && selectionOverlay.isVisible()) {
+			// Cancelar animaciones previas
+			FadeTransition previousFade = (FadeTransition) selectionOverlay.getProperties().get("currentFade");
+			if (previousFade != null) {
+				previousFade.stop();
+			}
+
+			FadeTransition fadeOut = new FadeTransition(Duration.millis(150), selectionOverlay);
+			selectionOverlay.getProperties().put("currentFade", fadeOut);
+
+			fadeOut.setFromValue(selectionOverlay.getOpacity());
+			fadeOut.setToValue(0.0);
+			fadeOut.setOnFinished(e -> {
+				selectionOverlay.setVisible(false);
+				selectionOverlay.setFill(Color.TRANSPARENT);
+				selectionOverlay.setOpacity(1.0);
+				selectionOverlay.getProperties().remove("currentFade");
+			});
+			fadeOut.play();
+		} else {
+			selectionOverlay.setVisible(false);
+			selectionOverlay.setFill(Color.TRANSPARENT);
+		}
+
+		// 6. Asegurar que las piezas no tengan escala residual
+		if (pieceImageView != null) {
+			pieceImageView.setScaleX(1.0);
+			pieceImageView.setScaleY(1.0);
+			pieceImageView.setOpacity(1.0);
+		}
+
+		if (pieceLabel != null) {
+			pieceLabel.setScaleX(1.0);
+			pieceLabel.setScaleY(1.0);
+			pieceLabel.setOpacity(1.0);
+		}
 	}
-	
+
 	private void cancelPendingTransitions() {
-	    // Cancelar cualquier transición pendiente
-	    if (possibleMoveIndicator.getProperties().containsKey("currentFade")) {
-	        FadeTransition ft = (FadeTransition) possibleMoveIndicator.getProperties().get("currentFade");
-	        if (ft != null) ft.stop();
-	        possibleMoveIndicator.getProperties().remove("currentFade");
-	    }
-	    
-	    if (captureIndicator.getProperties().containsKey("currentScale")) {
-	        ScaleTransition st = (ScaleTransition) captureIndicator.getProperties().get("currentScale");
-	        if (st != null) st.stop();
-	        captureIndicator.getProperties().remove("currentScale");
-	    }
+		// Cancelar cualquier transición pendiente
+		if (possibleMoveIndicator.getProperties().containsKey("currentFade")) {
+			FadeTransition ft = (FadeTransition) possibleMoveIndicator.getProperties().get("currentFade");
+			if (ft != null)
+				ft.stop();
+			possibleMoveIndicator.getProperties().remove("currentFade");
+		}
+
+		if (captureIndicator.getProperties().containsKey("currentScale")) {
+			ScaleTransition st = (ScaleTransition) captureIndicator.getProperties().get("currentScale");
+			if (st != null)
+				st.stop();
+			captureIndicator.getProperties().remove("currentScale");
+		}
 	}
-	
+
 	private void startPiecePulse() {
 		javafx.scene.Node targetNode = null;
 		if (useImages && pieceImageView.isVisible()) {
@@ -344,19 +400,19 @@ public class ChessSquare {
 	}
 
 	private void stopPiecePulse() {
-	    if (piecePulseAnimation != null) {
-	        piecePulseAnimation.stop();
-	    }
-	    
-	    // Restaurar escala inmediatamente
-	    if (pieceImageView != null && pieceImageView.isVisible()) {
-	        pieceImageView.setScaleX(1.0);
-	        pieceImageView.setScaleY(1.0);
-	    }
-	    if (pieceLabel != null && pieceLabel.isVisible()) {
-	        pieceLabel.setScaleX(1.0);
-	        pieceLabel.setScaleY(1.0);
-	    }
+		if (piecePulseAnimation != null) {
+			piecePulseAnimation.stop();
+		}
+
+		// Restaurar escala inmediatamente
+		if (pieceImageView != null && pieceImageView.isVisible()) {
+			pieceImageView.setScaleX(1.0);
+			pieceImageView.setScaleY(1.0);
+		}
+		if (pieceLabel != null && pieceLabel.isVisible()) {
+			pieceLabel.setScaleX(1.0);
+			pieceLabel.setScaleY(1.0);
+		}
 	}
 
 	private void handlePossibleMoves(boolean isPossibleMove, boolean isCaptureMove) {
@@ -420,69 +476,100 @@ public class ChessSquare {
 		}
 	}
 
-	public void clearHighlight() {
-	    // 1. Detener todas las animaciones
-	    if (piecePulseAnimation != null) {
-	        piecePulseAnimation.stop();
-	    }
-	    
-	    // 2. Cancelar cualquier transición pendiente
-	    cancelPendingTransitions();
-	    
-	    // 3. Restaurar estado inmediatamente
-	    isSelected = false;
-	    
-	    // 4. Limpiar efectos visuales INMEDIATAMENTE (sin animaciones)
-	    background.setEffect(null);
-	    selectionOverlay.setVisible(false);
-	    selectionOverlay.setFill(Color.TRANSPARENT);
-	    selectionOverlay.setOpacity(1.0);
-	    
-	    // 5. Ocultar indicadores
-	    possibleMoveIndicator.setVisible(false);
-	    possibleMoveIndicator.setOpacity(0);
-	    captureIndicator.setVisible(false);
-	    captureIndicator.setScaleX(0);
-	    captureIndicator.setScaleY(0);
-	    
-	    // 6. Restaurar escala de piezas
-	    if (pieceImageView != null) {
-	        pieceImageView.setScaleX(1.0);
-	        pieceImageView.setScaleY(1.0);
-	        pieceImageView.setOpacity(1.0);
-	    }
-	    
-	    if (pieceLabel != null) {
-	        pieceLabel.setScaleX(1.0);
-	        pieceLabel.setScaleY(1.0);
-	        pieceLabel.setOpacity(1.0);
-	    }
-	    
-	    // 7. Restaurar color base
-	    updateBaseColor();
+	public void highlightAsMovePart() {
+		javafx.application.Platform.runLater(() -> {
+			// Usar el selectionOverlay para mostrar un tinte amarillo
+			selectionOverlay.setFill(MOVE_HIGHLIGHT_COLOR);
+			selectionOverlay.setVisible(true);
+			selectionOverlay.setOpacity(1.0);
+
+			// Opcionalmente, agregar un ligero brillo
+			InnerShadow highlightGlow = new InnerShadow();
+			highlightGlow.setColor(Color.YELLOW);
+			highlightGlow.setRadius(15);
+			background.setEffect(highlightGlow);
+		});
 	}
-	
+
+	public void highlightAsHint() {
+		javafx.application.Platform.runLater(() -> {
+			// Usar el selectionOverlay para mostrar un tinte cian
+			selectionOverlay.setFill(HINT_HIGHLIGHT_COLOR);
+			selectionOverlay.setVisible(true);
+			selectionOverlay.setOpacity(1.0);
+
+			// Agregar un brillo cian
+			InnerShadow hintGlow = new InnerShadow();
+			hintGlow.setColor(Color.CYAN);
+			hintGlow.setRadius(15);
+			background.setEffect(hintGlow);
+		});
+	}
+
+	public void clearHighlight() {
+		// 1. Detener todas las animaciones
+		if (piecePulseAnimation != null) {
+			piecePulseAnimation.stop();
+		}
+
+		// 2. Cancelar cualquier transición pendiente
+		cancelPendingTransitions();
+
+		// 3. Restaurar estado inmediatamente
+		isSelected = false;
+
+		// 4. Limpiar efectos visuales INMEDIATAMENTE (sin animaciones)
+		background.setEffect(null);
+		selectionOverlay.setVisible(false);
+		selectionOverlay.setFill(Color.TRANSPARENT);
+		selectionOverlay.setOpacity(1.0);
+
+		// 5. Ocultar indicadores
+		possibleMoveIndicator.setVisible(false);
+		possibleMoveIndicator.setOpacity(0);
+		captureIndicator.setVisible(false);
+		captureIndicator.setScaleX(0);
+		captureIndicator.setScaleY(0);
+
+		// 6. Restaurar escala de piezas
+		if (pieceImageView != null) {
+			pieceImageView.setScaleX(1.0);
+			pieceImageView.setScaleY(1.0);
+			pieceImageView.setOpacity(1.0);
+		}
+
+		if (pieceLabel != null) {
+			pieceLabel.setScaleX(1.0);
+			pieceLabel.setScaleY(1.0);
+			pieceLabel.setOpacity(1.0);
+		}
+
+		// 7. Restaurar color base
+		updateBaseColor();
+	}
+
 	private void stopAllAnimations() {
-	    // Detener animación de pulso
-	    if (piecePulseAnimation != null) {
-	        piecePulseAnimation.stop();
-	    }
-	    
-	    // Detener cualquier transición pendiente en indicadores
-	    if (selectionOverlay.getProperties().containsKey("currentFade")) {
-	        FadeTransition ft = (FadeTransition) selectionOverlay.getProperties().get("currentFade");
-	        if (ft != null) ft.stop();
-	    }
-	    
-	    // Restaurar escala inmediatamente
-	    if (pieceImageView.isVisible()) {
-	        pieceImageView.setScaleX(1.0);
-	        pieceImageView.setScaleY(1.0);
-	    }
-	    if (pieceLabel.isVisible()) {
-	        pieceLabel.setScaleX(1.0);
-	        pieceLabel.setScaleY(1.0);
-	    }
+		// Detener animación de pulso
+		if (piecePulseAnimation != null) {
+			piecePulseAnimation.stop();
+		}
+
+		// Detener cualquier transición pendiente en indicadores
+		if (selectionOverlay.getProperties().containsKey("currentFade")) {
+			FadeTransition ft = (FadeTransition) selectionOverlay.getProperties().get("currentFade");
+			if (ft != null)
+				ft.stop();
+		}
+
+		// Restaurar escala inmediatamente
+		if (pieceImageView.isVisible()) {
+			pieceImageView.setScaleX(1.0);
+			pieceImageView.setScaleY(1.0);
+		}
+		if (pieceLabel.isVisible()) {
+			pieceLabel.setScaleX(1.0);
+			pieceLabel.setScaleY(1.0);
+		}
 	}
 
 	// Getters y setters importantes para animaciones
@@ -537,7 +624,7 @@ public class ChessSquare {
 	}
 
 	public boolean isEmpty() {
-		return (pieceLabel.getText() == null || pieceLabel.getText().isEmpty()) && 
+		return (pieceLabel.getText() == null || pieceLabel.getText().isEmpty()) &&
 				(!pieceImageView.isVisible() || pieceImageView.getImage() == null);
 	}
 }

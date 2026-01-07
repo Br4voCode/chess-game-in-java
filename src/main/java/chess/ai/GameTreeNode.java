@@ -3,6 +3,7 @@ package chess.ai;
 import chess.model.Board;
 import chess.model.Move;
 import chess.model.PieceColor;
+import chess.rules.RulesEngine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,19 +29,46 @@ public class GameTreeNode {
         this.depth = depth;
     }
 
-    public Board getBoard() { return board; }
-    public Move getMoveFromParent() { return moveFromParent; }
-    public PieceColor getSideToMove() { return sideToMove; }
-    public GameTreeNode getParent() { return parent; }
-    public List<GameTreeNode> getChildren() { return children; }
-    public int getDepth() { return depth; }
-    public Integer getEvaluation() { return evaluation; }
-    public void setEvaluation(int eval) { this.evaluation = eval; }
-    public boolean isExpanded() { return expanded; }
+    public Board getBoard() {
+        return board;
+    }
+
+    public Move getMoveFromParent() {
+        return moveFromParent;
+    }
+
+    public PieceColor getSideToMove() {
+        return sideToMove;
+    }
+
+    public GameTreeNode getParent() {
+        return parent;
+    }
+
+    public List<GameTreeNode> getChildren() {
+        return children;
+    }
+
+    public int getDepth() {
+        return depth;
+    }
+
+    public Integer getEvaluation() {
+        return evaluation;
+    }
+
+    public void setEvaluation(int eval) {
+        this.evaluation = eval;
+    }
+
+    public boolean isExpanded() {
+        return expanded;
+    }
 
     public void expand() {
-        if (expanded) return;
-        List<chess.model.Move> moves = board.getAllPossibleMoves(sideToMove);
+        if (expanded)
+            return;
+        List<chess.model.Move> moves = RulesEngine.legalMoves(board, sideToMove);
         PieceColor next = sideToMove.opposite();
         for (chess.model.Move m : moves) {
             Board nb = board.copy();

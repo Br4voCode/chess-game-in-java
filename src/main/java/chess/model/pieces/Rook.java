@@ -6,7 +6,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Rook extends Piece {
+    private boolean hasMoved = false;
+
     public Rook(PieceColor color) { super(color, PieceType.ROOK); }
+
+    public boolean hasMovedFromStart() { return hasMoved; }
+    public void setHasMoved(boolean moved) { this.hasMoved = moved; }
 
     @Override
     public List<Move> getPseudoLegalMoves(Board board, Position pos) {
