@@ -18,6 +18,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.StackPane;
 
 /**
  * شاشة البداية التي تسمح للمستخدم بالاختيار بين:
@@ -28,14 +29,13 @@ import javafx.scene.layout.VBox;
  */
 public class StartScreen {
     private BorderPane root;
+    private StackPane mainContainer;
     private BiConsumer<PieceColor, Integer> onNewGame;
     private Runnable onLoadGame;
     private Runnable onNewTwoPlayerGame;
     private Runnable onNewAIVsAIGame;
     private static final String HISTORY_FILE = "game_history.dat";
-    private PieceColor selectedPlayerColor = PieceColor.WHITE;
-    private int selectedDifficulty = GameSettings.DEFAULT_DEPTH;
-    private GameSettings lastSettings;
+    private GameOptionsDialog currentDialog;
 
     public StartScreen(BiConsumer<PieceColor, Integer> onNewGame, Runnable onLoadGame, Runnable onNewTwoPlayerGame) {
         this(onNewGame, onLoadGame, onNewTwoPlayerGame, null);
@@ -56,6 +56,10 @@ public class StartScreen {
         root.setStyle("-fx-background-color: linear-gradient(to bottom right, #0f0f10, #2b2b2b); -fx-padding: 40;");
 
         VBox mainPanel = createMainPanel();
+        
+        // Envuelvo el contenido en un StackPane para permitir overlays
+        mainContainer = new StackPane();
+        mainContainer.getChildren().add(root);
         root.setCenter(mainPanel);
     }
 
@@ -72,10 +76,8 @@ public class StartScreen {
         Label titleLabel = new Label("♔ CHESS GAME ♚");
         titleLabel.setStyle("-fx-font-size: 48px; -fx-font-weight: bold; -fx-text-fill: white;");
 
-        Label subtitleLabel = new Label("Personaliza tu partida y elige un modo");
+        Label subtitleLabel = new Label("Elige un modo de juego");
         subtitleLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #9e9e9e;");
-
-        VBox setupCard = createSetupCard();
 
         Button newGameButton = new Button("1 Player (vs AI)");
         newGameButton.setStyle(
@@ -86,12 +88,12 @@ public class StartScreen {
                         "-fx-font-weight: bold; " +
                         "-fx-cursor: hand;");
         newGameButton.setMinWidth(250);
-        newGameButton.setOnAction(e -> {
-            GameSettingsStore.save(GameSettings.humanVsAI(selectedPlayerColor, selectedDifficulty));
+        newGameButton.setOnAction(e -> showGameOptionsDialog("humanVsAI", (color, difficulty) -> {
+            GameSettingsStore.save(GameSettings.humanVsAI(color, difficulty));
             if (onNewGame != null) {
-                onNewGame.accept(selectedPlayerColor, selectedDifficulty);
+                onNewGame.accept(color, difficulty);
             }
-        });
+        }));
 
         Button newTwoPlayerGameButton = new Button("2 Players");
         newTwoPlayerGameButton.setStyle(
@@ -117,10 +119,10 @@ public class StartScreen {
                         "-fx-cursor: hand;");
         aiVsAIButton.setMinWidth(250);
         if (onNewAIVsAIGame != null) {
-            aiVsAIButton.setOnAction(e -> {
-                GameSettingsStore.save(GameSettings.aiVsAi(selectedDifficulty));
+            aiVsAIButton.setOnAction(e -> showGameOptionsDialog("aiVsAI", (color, difficulty) -> {
+                GameSettingsStore.save(GameSettings.aiVsAi(difficulty));
                 onNewAIVsAIGame.run();
-            });
+            }));
         } else {
             aiVsAIButton.setDisable(true);
         }
@@ -166,7 +168,6 @@ public class StartScreen {
         panel.getChildren().addAll(
                 titleLabel,
                 subtitleLabel,
-                setupCard,
                 newGameButton,
                 newTwoPlayerGameButton,
                 aiVsAIButton,
@@ -176,136 +177,35 @@ public class StartScreen {
         return panel;
     }
 
-    private VBox createSetupCard() {
-        VBox card = new VBox(18);
-        card.setAlignment(Pos.CENTER);
-        card.setPadding(new Insets(25));
-        card.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.04);" +
-                        "-fx-border-color: rgba(255,255,255,0.12);" +
-                        "-fx-border-radius: 18;" +
-                        "-fx-background-radius: 18;"
-        );
-
-        Label setupTitle = new Label("Configuración rápida");
-        setupTitle.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
-
-        Label colorLabel = new Label("Color de piezas");
-        colorLabel.setStyle("-fx-text-fill: #bdbdbd; -fx-font-size: 14px;");
-
-        ToggleGroup colorGroup = new ToggleGroup();
-        ToggleButton whiteToggle = createColorToggle("Jugar con blancas", PieceColor.WHITE, colorGroup);
-        ToggleButton blackToggle = createColorToggle("Jugar con negras", PieceColor.BLACK, colorGroup);
-        if (selectedPlayerColor == PieceColor.WHITE) {
-            whiteToggle.setSelected(true);
-        } else {
-            blackToggle.setSelected(true);
-        }
-
-        HBox colorBox = new HBox(10, whiteToggle, blackToggle);
-        colorBox.setAlignment(Pos.CENTER);
-
-        Label difficultyLabel = new Label("Dificultad del AI");
-        difficultyLabel.setStyle("-fx-text-fill: #bdbdbd; -fx-font-size: 14px;");
-
-        selectedDifficulty = clampDifficulty(selectedDifficulty);
-
-        Label difficultyValueLabel = new Label(formatDifficultyLabel(selectedDifficulty));
-        difficultyValueLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;");
-
-        Slider difficultySlider = new Slider(GameSettings.MIN_DEPTH, GameSettings.MAX_DEPTH, selectedDifficulty);
-        difficultySlider.setMajorTickUnit(1);
-        difficultySlider.setMinorTickCount(0);
-        difficultySlider.setShowTickMarks(true);
-        difficultySlider.setShowTickLabels(true);
-        difficultySlider.setSnapToTicks(true);
-        difficultySlider.setPrefWidth(320);
-        difficultySlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-            selectedDifficulty = newVal.intValue();
-            difficultyValueLabel.setText(formatDifficultyLabel(selectedDifficulty));
-        });
-
-        Label difficultyHint = new Label("Controla la profundidad del árbol de Minimax (1 = rápido, 4 = maestro).");
-        difficultyHint.setStyle("-fx-text-fill: #8f8f8f; -fx-font-size: 12px; -fx-wrap-text: true;");
-
-        card.getChildren().addAll(
-                setupTitle,
-                colorLabel,
-                colorBox,
-                difficultyLabel,
-                difficultyValueLabel,
-                difficultySlider,
-                difficultyHint
-        );
-
-        return card;
-    }
-
-    private ToggleButton createColorToggle(String text, PieceColor color, ToggleGroup group) {
-        ToggleButton toggle = new ToggleButton(text);
-        toggle.setToggleGroup(group);
-        toggle.setPrefWidth(160);
-        final String baseStyle = "-fx-font-size: 14px;" +
-                "-fx-background-color: rgba(255,255,255,0.08);" +
-                "-fx-text-fill: white;" +
-                "-fx-background-radius: 12;" +
-                "-fx-padding: 12 20;";
-        final String hoverStyle = "-fx-font-size: 14px;" +
-                "-fx-background-color: rgba(255,255,255,0.18);" +
-                "-fx-text-fill: white;" +
-                "-fx-background-radius: 12;" +
-                "-fx-padding: 12 20;";
-        final String selectedStyle = "-fx-font-size: 14px;" +
-                "-fx-background-color: linear-gradient(to right, #4caf50, #2e7d32);" +
-                "-fx-text-fill: white;" +
-                "-fx-background-radius: 12;" +
-                "-fx-padding: 12 20;" +
-                "-fx-effect: dropshadow(gaussian, rgba(76,175,80,0.35), 20, 0, 0, 6);";
-
-        toggle.setStyle(baseStyle);
-
-        toggle.hoverProperty().addListener((obs, wasHover, isHover) -> {
-            if (toggle.isSelected()) {
-                toggle.setStyle(selectedStyle);
-            } else {
-                toggle.setStyle(isHover ? hoverStyle : baseStyle);
-            }
-        });
-
-        toggle.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
-            if (isSelected) {
-                selectedPlayerColor = color;
-                toggle.setStyle(selectedStyle);
-            } else if (!toggle.isHover()) {
-                toggle.setStyle(baseStyle);
-            }
-        });
-
-        toggle.setTooltip(new Tooltip(color == PieceColor.WHITE
-                ? "Las blancas mueven primero."
-                : "Controla las negras y deja que la IA abra la partida."));
-
-        return toggle;
-    }
-
-    private String formatDifficultyLabel(int depth) {
-        return GameSettings.describeDepth(depth);
-    }
-
     private void loadPersistedSettings() {
-        lastSettings = GameSettingsStore.load();
-        if (lastSettings != null && lastSettings.isHumanVsAI()) {
-            selectedPlayerColor = lastSettings.getHumanColor();
-            selectedDifficulty = clampDifficulty(lastSettings.getAiDepth());
-        }
+        // Las configuraciones persistidas ahora se cargan desde el diálogo
     }
 
-    private int clampDifficulty(int depth) {
-        return Math.max(GameSettings.MIN_DEPTH, Math.min(GameSettings.MAX_DEPTH, depth));
+    private void showGameOptionsDialog(String gameMode, BiConsumer<PieceColor, Integer> callback) {
+        currentDialog = new GameOptionsDialog(gameMode);
+        mainContainer.getChildren().add(currentDialog.getContainer());
+
+        currentDialog.showDialog(
+            () -> {
+                // Cuando se confirma
+                callback.accept(currentDialog.getSelectedColor(), currentDialog.getSelectedDifficulty());
+                mainContainer.getChildren().remove(currentDialog.getContainer());
+                currentDialog = null;
+            },
+            () -> {
+                // Cuando se cancela
+                mainContainer.getChildren().remove(currentDialog.getContainer());
+                currentDialog = null;
+            }
+        );
     }
 
-    public BorderPane getRoot() {
-        return root;
+    public StackPane getMainContainer() {
+        return mainContainer;
+    }
+
+    public StackPane getRoot() {
+        return mainContainer;
     }
 
     /**
