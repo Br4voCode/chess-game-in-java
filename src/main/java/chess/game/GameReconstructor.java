@@ -94,4 +94,16 @@ public class GameReconstructor {
         String nextColor = (moveCount % 2 == 0) ? "White" : "Black";
         return "Saved game: " + fullMoves + " full moves, " + nextColor + " to move";
     }
+
+    /**
+     * Obtiene el modo de juego guardado
+     * @param historyFile ruta del archivo de historial
+     * @return el modo de juego guardado o null si no existe
+     */
+    public static chess.history.GameMetadata.GameMode getGameMode(String historyFile) {
+        StepHistoryStore store = new StepHistoryStore(historyFile);
+        store.loadApplied();
+        chess.history.GameMetadata metadata = store.getGameMetadata();
+        return metadata != null ? metadata.getGameMode() : null;
+    }
 }

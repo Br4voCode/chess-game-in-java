@@ -37,6 +37,7 @@ public class GameView {
     private TimerBar whiteTimerBar;
     private Game gameInstance;
     private boolean shouldLoadHistory;
+    private boolean shouldStartAIVsAI;
     private AIMatch aiMatch;
 
     private Button undoButton;
@@ -56,6 +57,7 @@ public class GameView {
 
     public GameView(boolean loadFromHistory, boolean isPlayerVsPlayer, boolean isAIVsAI) {
         this.shouldLoadHistory = loadFromHistory;
+        this.shouldStartAIVsAI = false;
         initializeComponents(loadFromHistory, isPlayerVsPlayer, isAIVsAI);
         setupLayout();
         updateUIFromController();
@@ -64,31 +66,66 @@ public class GameView {
             loadStepHistoryToUI(gameInstance.getStepHistory());
         }
 
-        if (isAIVsAI) {
+        // Iniciar partida IA vs IA si es necesario (tanto para nuevas como cargadas)
+        if (shouldStartAIVsAI) {
             startAIVsAIMatch();
+        }
+
+        // Si cargamos una partida PvAI y es el turno de la IA, activar su jugada
+        if (loadFromHistory && !isPlayerVsPlayer && !isAIVsAI && gameInstance != null) {
+            triggerAITurnIfNeeded();
         }
     }
 
     private void initializeComponents(boolean loadFromHistory, boolean isPlayerVsPlayer, boolean isAIVsAI) {
         Game game;
+        boolean shouldStartAIMatch = false;
 
         if (loadFromHistory && StartScreen.hasGameHistory()) {
-
-            game = GameReconstructor.reconstructGameFromHistory(
-                    StartScreen.getHistoryFilePath(),
-                    new HumanPlayer(),
-                    new AIPlayer(PieceColor.BLACK, 3));
+            // Cargar partida anterior y determinar el modo de juego guardado
+            chess.history.GameMetadata.GameMode savedMode = chess.game.GameReconstructor.getGameMode(StartScreen.getHistoryFilePath());
+            
+            if (savedMode == chess.history.GameMetadata.GameMode.PVP) {
+                // Partida guardada era PvP
+                game = chess.game.GameReconstructor.reconstructGameFromHistory(
+                        StartScreen.getHistoryFilePath(),
+                        new HumanPlayer(),
+                        new HumanPlayer());
+                isPlayerVsPlayer = true;
+                isAIVsAI = false;
+            } else if (savedMode == chess.history.GameMetadata.GameMode.AIVAI) {
+                // Partida guardada era AIvAI
+                game = chess.game.GameReconstructor.reconstructGameFromHistory(
+                        StartScreen.getHistoryFilePath(),
+                        new AIPlayer(PieceColor.WHITE, 3),
+                        new AIPlayer(PieceColor.BLACK, 3));
+                isPlayerVsPlayer = false;
+                isAIVsAI = true;
+                shouldStartAIMatch = true;
+            } else {
+                // Partida guardada era PvAI o no tiene metadata (default)
+                game = chess.game.GameReconstructor.reconstructGameFromHistory(
+                        StartScreen.getHistoryFilePath(),
+                        new HumanPlayer(),
+                        new AIPlayer(PieceColor.BLACK, 3));
+                isPlayerVsPlayer = false;
+                isAIVsAI = false;
+            }
         } else {
 
             if (isAIVsAI) {
 
                 game = new Game(new AIPlayer(PieceColor.WHITE, 3), new AIPlayer(PieceColor.BLACK, 3));
+                game.setGameMode(chess.history.GameMetadata.GameMode.AIVAI);
+                shouldStartAIMatch = true;
             } else if (isPlayerVsPlayer) {
 
                 game = new Game(new HumanPlayer(), new HumanPlayer());
+                game.setGameMode(chess.history.GameMetadata.GameMode.PVP);
             } else {
 
                 game = new Game(new HumanPlayer(), new AIPlayer(PieceColor.BLACK, 3));
+                game.setGameMode(chess.history.GameMetadata.GameMode.PVAI);
             }
         }
 
@@ -99,6 +136,9 @@ public class GameView {
         this.controller.setGameView(this);
 
         this.chessBoard.setSquareClickListener(controller::onSquareClicked);
+
+        // Store flag to start AI match after UI is set up
+        this.shouldStartAIVsAI = shouldStartAIMatch;
 
     }
 
@@ -446,6 +486,38 @@ public class GameView {
         java.util.List<chess.history.Step> steps = history.getAppliedSteps();
         for (chess.history.Step step : steps) {
             addMoveToHistoryWithColor(step.getDisplayText(), step.getMoverColor());
+        }
+    }
+
+    /**
+     * Trigger AI move if it's the AI's turn after loading a game
+     */
+    private void triggerAITurnIfNeeded() {
+        if (gameInstance == null || controller == null) {
+            return;
+        }
+
+        // Check if current turn belongs to AI player
+        PieceColor currentTurn = gameInstance.getTurn();
+        chess.game.Player currentPlayer = (currentTurn == PieceColor.WHITE) 
+            ? gameInstance.getWhitePlayer() 
+            : gameInstance.getBlackPlayer();
+
+        // If it's AI's turn, trigger the AI move with a small delay
+        if (currentPlayer instanceof AIPlayer) {
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000); // Small delay to let UI settle
+                    javafx.application.Platform.runLater(() -> {
+                        chess.model.Move aiMove = gameInstance.getAIMoveIfAny();
+                        if (aiMove != null) {
+                            controller.executeMoveWithAnimation(aiMove);
+                        }
+                    });
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }).start();
         }
     }
 

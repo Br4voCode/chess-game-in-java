@@ -357,6 +357,16 @@ public class Game {
     }
 
     /**
+     * Establece el modo de juego en los metadatos
+     * 
+     * @param gameMode el modo de juego (PVP, PVAI, AIVAI)
+     */
+    public void setGameMode(chess.history.GameMetadata.GameMode gameMode) {
+        chess.history.GameMetadata metadata = new chess.history.GameMetadata(gameMode);
+        this.stepHistoryStore.setGameMetadata(metadata);
+    }
+
+    /**
      * Establece si los movimientos deben guardarse en el historial
      * 
      * @param shouldSave true para guardar movimientos, false para solo aplicarlos
