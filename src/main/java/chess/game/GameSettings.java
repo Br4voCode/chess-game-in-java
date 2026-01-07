@@ -11,17 +11,19 @@ public class GameSettings implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static final int MIN_DEPTH = 1;
-    public static final int MAX_DEPTH = 8;
+    public static final int MAX_DEPTH = 4;
     public static final int DEFAULT_DEPTH = 3;
 
     private final PieceColor humanColor;
     private final int aiDepth;
+    private final int engineDepth;
     private final boolean playerVsPlayer;
     private final boolean aiVsAI;
 
     private GameSettings(PieceColor humanColor, int aiDepth, boolean playerVsPlayer, boolean aiVsAI) {
         this.humanColor = humanColor != null ? humanColor : PieceColor.WHITE;
         this.aiDepth = clampDepth(aiDepth);
+        this.engineDepth = computeEngineDepth(this.aiDepth);
         this.playerVsPlayer = playerVsPlayer;
         this.aiVsAI = aiVsAI;
     }
@@ -44,6 +46,13 @@ public class GameSettings implements Serializable {
 
     public int getAiDepth() {
         return aiDepth;
+    }
+
+    /**
+     * Returns the effective engine depth used by the AI engine.
+     */
+    public int getEngineDepth() {
+        return engineDepth;
     }
 
     public boolean isPlayerVsPlayer() {
@@ -80,6 +89,11 @@ public class GameSettings implements Serializable {
         if (depth > MAX_DEPTH) {
             return MAX_DEPTH;
         }
+        return depth;
+    }
+
+    private int computeEngineDepth(int depth) {
+        
         return depth;
     }
 }
