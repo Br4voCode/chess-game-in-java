@@ -19,11 +19,13 @@ public class StartScreen {
     private BorderPane root;
     private Runnable onNewGame;
     private Runnable onLoadGame;
+    private Runnable onNewTwoPlayerGame;
     private static final String HISTORY_FILE = "game_history.dat";
 
-    public StartScreen(Runnable onNewGame, Runnable onLoadGame) {
+    public StartScreen(Runnable onNewGame, Runnable onLoadGame, Runnable onNewTwoPlayerGame) {
         this.onNewGame = onNewGame;
         this.onLoadGame = onLoadGame;
+        this.onNewTwoPlayerGame = onNewTwoPlayerGame;
         initializeComponents();
     }
 
@@ -50,8 +52,8 @@ public class StartScreen {
         Label subtitleLabel = new Label("Select an option");
         subtitleLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #bbbbbb;");
 
-        // Botón Nueva Partida
-        Button newGameButton = new Button("New Game");
+        // Botón Nueva Partida (vs AI)
+        Button newGameButton = new Button("1 Player (vs AI)");
         newGameButton.setStyle(
                 "-fx-font-size: 18px; " +
                 "-fx-padding: 15px 50px; " +
@@ -62,6 +64,19 @@ public class StartScreen {
         );
         newGameButton.setMinWidth(250);
         newGameButton.setOnAction(e -> onNewGame.run());
+
+        // Botón Nueva Partida (2 jugadores)
+        Button newTwoPlayerGameButton = new Button("2 Players");
+        newTwoPlayerGameButton.setStyle(
+                "-fx-font-size: 18px; " +
+                "-fx-padding: 15px 50px; " +
+                "-fx-background-color: #ff9800; " +
+                "-fx-text-fill: white; " +
+                "-fx-font-weight: bold; " +
+                "-fx-cursor: hand;"
+        );
+        newTwoPlayerGameButton.setMinWidth(250);
+        newTwoPlayerGameButton.setOnAction(e -> onNewTwoPlayerGame.run());
 
         // Botón Cargar Partida (deshabilitado si no existe archivo)
         Button loadGameButton = new Button("Load Last Game");
@@ -111,6 +126,7 @@ public class StartScreen {
                 titleLabel,
                 subtitleLabel,
                 newGameButton,
+                newTwoPlayerGameButton,
                 loadGameButton,
                 infoLabel
         );

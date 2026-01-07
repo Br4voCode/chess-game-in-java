@@ -27,7 +27,8 @@ public class Main extends Application {
     private void showStartScreen() {
         StartScreen startScreen = new StartScreen(
                 this::startNewGame,
-                this::loadLastGame
+                this::loadLastGame,
+                this::startNewTwoPlayerGame
         );
         Scene scene = new Scene(startScreen.getRoot(), 800, 600);
         primaryStage.setScene(scene);
@@ -42,6 +43,13 @@ public class Main extends Application {
 
     private void loadLastGame() {
         GameView gameView = new GameView(true);
+        Scene scene = new Scene(gameView.getRoot());
+        primaryStage.setScene(scene);
+        primaryStage.setFullScreen(true);
+    }
+
+    private void startNewTwoPlayerGame() {
+        GameView gameView = new GameView(false, true);
         Scene scene = new Scene(gameView.getRoot());
         primaryStage.setScene(scene);
         primaryStage.setFullScreen(true);
