@@ -45,8 +45,14 @@ public final class GameEndScreen {
 	private final StackPane root;
 	private final VBox card;
 	private final Confeti confeti;
+	private final String customMessage;
 
 	public GameEndScreen(Stage owner, Result result) {
+		this(owner, result, null);
+	}
+
+	public GameEndScreen(Stage owner, Result result, String customMessage) {
+		this.customMessage = customMessage;
 		this.stage = new Stage(StageStyle.TRANSPARENT);
 		this.stage.initOwner(owner);
 		this.stage.initModality(Modality.WINDOW_MODAL);
@@ -116,7 +122,8 @@ public final class GameEndScreen {
 		title.setTextFill(Color.WHITE);
 		title.setFont(Font.font("System", FontWeight.EXTRA_BOLD, 28));
 
-		Label subtitle = new Label(visual.subtitle);
+		String subtitleText = customMessage != null ? customMessage : visual.subtitle;
+		Label subtitle = new Label(subtitleText);
 		subtitle.setTextFill(Color.rgb(220, 220, 225));
 		subtitle.setFont(Font.font("System", FontWeight.NORMAL, 14));
 		subtitle.setWrapText(true);

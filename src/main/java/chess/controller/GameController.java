@@ -277,7 +277,7 @@ public class GameController {
         game.setMoveCount(game.getMoveCount() + 1);
         game.setTurn(step.getMoverColor().opposite());
 
-        String result = RulesEngine.evaluateGameResult(board, game.getTurn());
+        String result = RulesEngine.evaluateGameResult(board, game.getTurn(), game);
         if (result != null) {
             game.setGameOver(true, result);
             isHistoryNavigationLocked = true;
@@ -573,43 +573,31 @@ public class GameController {
 
     private void showEndScreenIfNeeded(MoveResult result) {
 
-        if (isTwoPlayerMode) {
-            return;
-        }
-
         if (gameView == null || gameView.getRoot() == null || gameView.getRoot().getScene() == null) {
             return;
         }
 
-        PieceColor moverColor = result.getNextTurn().opposite();
+        PieceColor winnerColor = result.getNextTurn().opposite();
 
         GameEndScreen.Result screenResult;
-        if (result.isStalemate()) {
+        if (result.isStalemate() || result.isInsufficientMaterial() || result.isThreefoldRepetition()) {
             screenResult = GameEndScreen.Result.DRAW;
         } else if (result.isCheckmate()) {
-            PieceColor whiteIsAI = (game.getWhitePlayer() instanceof AIPlayer) ? PieceColor.WHITE : null;
-            PieceColor blackIsAI = (game.getBlackPlayer() instanceof AIPlayer) ? PieceColor.BLACK : null;
-
-            if (!isAIVsAIMode) {
-                PieceColor aiColor = (whiteIsAI != null) ? PieceColor.WHITE
-                        : (blackIsAI != null ? PieceColor.BLACK : null);
-                if (aiColor == null) {
-                    return;
-                }
-                screenResult = (moverColor == aiColor) ? GameEndScreen.Result.LOSE : GameEndScreen.Result.WIN;
+            if (isTwoPlayerMode) {
+                screenResult = (winnerColor == PieceColor.WHITE) ? GameEndScreen.Result.WIN : GameEndScreen.Result.LOSE;
+            } else if (isAIVsAIMode) {
+                screenResult = (winnerColor == PieceColor.WHITE) ? GameEndScreen.Result.WIN : GameEndScreen.Result.LOSE;
             } else {
-
-                if (whiteIsAI == null || blackIsAI == null) {
-                    return;
-                }
-                screenResult = (moverColor == PieceColor.WHITE) ? GameEndScreen.Result.WIN : GameEndScreen.Result.LOSE;
+                PieceColor aiColor = (game.getWhitePlayer() instanceof AIPlayer) ? PieceColor.WHITE : PieceColor.BLACK;
+                screenResult = (winnerColor == aiColor) ? GameEndScreen.Result.LOSE : GameEndScreen.Result.WIN;
             }
         } else {
             return;
         }
 
         javafx.stage.Stage owner = (javafx.stage.Stage) gameView.getRoot().getScene().getWindow();
-        new GameEndScreen(owner, screenResult).show();
+        String gameResultMessage = result.getGameResult();
+        new GameEndScreen(owner, screenResult, gameResultMessage).show();
     }
 
     private void animateCastling(Move kingMove, Runnable onFinished) {
