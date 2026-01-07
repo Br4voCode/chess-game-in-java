@@ -191,26 +191,26 @@ public class ChessSquare {
 	}
 
 	private String getImageName(String pieceSymbol) {
-		// Mapear símbolos directamente a nombres de archivo
+		// Map Unicode chess symbols to image file names
 		switch (pieceSymbol) {
-			// Piezas blancas (mayúsculas)
-			case "K": return "white_king";
-			case "Q": return "white_queen";
-			case "R": return "white_rook";
-			case "B": return "white_bishop";
-			case "N": return "white_knight";
-			case "P": return "white_pawn";
+			// White pieces (Unicode symbols)
+			case "♔": return "white_king";
+			case "♕": return "white_queen";
+			case "♖": return "white_rook";
+			case "♗": return "white_bishop";
+			case "♘": return "white_knight";
+			case "♙": return "white_pawn";
 			
-			// Piezas negras (minúsculas)
-			case "k": return "black_king";
-			case "q": return "black_queen";
-			case "r": return "black_rook";
-			case "b": return "black_bishop";
-			case "n": return "black_knight";
-			case "p": return "black_pawn";
+			// Black pieces (Unicode symbols)
+			case "♚": return "black_king";
+			case "♛": return "black_queen";
+			case "♜": return "black_rook";
+			case "♝": return "black_bishop";
+			case "♞": return "black_knight";
+			case "♟": return "black_pawn";
 			
 			default: 
-				System.err.println("WARN: Símbolo de pieza desconocido: '" + pieceSymbol + "'");
+				System.err.println("WARN: Unknown piece symbol: '" + pieceSymbol + "'");
 				return "white_pawn"; // Fallback
 		}
 	}
