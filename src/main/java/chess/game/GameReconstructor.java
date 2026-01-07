@@ -51,7 +51,6 @@ public class GameReconstructor {
             Board board = game.getBoard();
 
             if (board.getPieceAt(move.getFrom()) != null) {
-                board.movePiece(move);
                 game.applyMove(move);
                 movesApplied++;
             } else {

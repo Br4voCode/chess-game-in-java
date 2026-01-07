@@ -435,16 +435,37 @@ public class Board {
      * Check if a position is under attack by the given color
      */
     public boolean isSquareUnderAttack(Position position, PieceColor attackerColor) {
-        if (position == null || !position.isValid()) return false;
-        
+        if (position == null || !position.isValid()) {
+            return false;
+        }
+
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
                 Piece p = grid[r][c];
-                if (p == null || p.getColor() != attackerColor) continue;
-                Position pos = new Position(r, c);
-                List<Move> pseudo = p.getPseudoLegalMoves(this, pos);
+                if (p == null || p.getColor() != attackerColor) {
+                    continue;
+                }
+
+                // Pawns attack diagonally only (pseudo-legal moves include forward moves).
+                if (p.getType() == PieceType.PAWN) {
+                    int dir = (attackerColor == PieceColor.WHITE) ? -1 : 1;
+                    Position a1 = new Position(r + dir, c - 1);
+                    Position a2 = new Position(r + dir, c + 1);
+                    if (a1.isValid() && a1.equals(position)) {
+                        return true;
+                    }
+                    if (a2.isValid() && a2.equals(position)) {
+                        return true;
+                    }
+                    continue;
+                }
+
+                Position from = new Position(r, c);
+                List<Move> pseudo = p.getPseudoLegalMoves(this, from);
                 for (Move m : pseudo) {
-                    if (m.getTo().equals(position)) return true;
+                    if (m.getTo().equals(position)) {
+                        return true;
+                    }
                 }
             }
         }
