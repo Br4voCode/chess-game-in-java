@@ -1,6 +1,9 @@
 package chess.model;
 
-public class Position {
+import java.io.Serializable;
+
+public class Position implements Serializable {
+    private static final long serialVersionUID = 1L;
     private int row; // 0..7
     private int col; // 0..7
 

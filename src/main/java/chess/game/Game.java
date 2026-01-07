@@ -1,9 +1,10 @@
 package chess.game;
 
 import chess.model.Board;
-import chess.model.PieceColor;
 import chess.model.Move;
+import chess.model.MoveHistory;
 import chess.model.Piece;
+import chess.model.PieceColor;
 
 public class Game {
     private Board board;
@@ -13,6 +14,8 @@ public class Game {
     private boolean gameOver;
     private String gameResult;
     private int moveCount;
+    private MoveHistory moveHistory;
+    private boolean shouldSaveMoves = true; // Flag para controlar si guardar movimientos
 
     public Game(Player white, Player black) {
         this.board = new Board();
@@ -22,6 +25,7 @@ public class Game {
         this.gameOver = false;
         this.gameResult = null;
         this.moveCount = 0;
+        this.moveHistory = new MoveHistory("game_history.dat");
     }
 
     public Board getBoard() { 
@@ -65,6 +69,11 @@ public class Game {
         board.movePiece(m);
         turn = turn.opposite();
         moveCount++;
+        
+        // Guardar el movimiento en el historial (solo si está habilitado)
+        if (shouldSaveMoves) {
+            moveHistory.addMove(m);
+        }
         
         // Check game state after move
         checkGameState();
@@ -131,6 +140,19 @@ public class Game {
         gameOver = false;
         gameResult = null;
         moveCount = 0;
+        // NO limpiar el historial aquí - solo resets internos
+    }
+
+    /**
+     * Reinicia el juego para una nueva partida, limpiando el historial de movimientos
+     */
+    public void resetForNewGame() {
+        board.initialize();
+        turn = PieceColor.WHITE;
+        gameOver = false;
+        gameResult = null;
+        moveCount = 0;
+        moveHistory.clear();
     }
 
     public boolean undoLastMove() {
@@ -199,5 +221,29 @@ public class Game {
         copy.gameResult = this.gameResult;
         copy.moveCount = this.moveCount;
         return copy;
+    }
+
+    /**
+     * Obtiene el historial de movimientos de la partida
+     * @return el objeto MoveHistory
+     */
+    public MoveHistory getMoveHistory() {
+        return moveHistory;
+    }
+
+    /**
+     * Establece la ruta del archivo de historial (debe llamarse antes de empezar la partida)
+     * @param filePath la ruta del archivo .dat
+     */
+    public void setMoveHistoryPath(String filePath) {
+        this.moveHistory = new MoveHistory(filePath);
+    }
+
+    /**
+     * Establece si los movimientos deben guardarse en el historial
+     * @param shouldSave true para guardar movimientos, false para solo aplicarlos
+     */
+    public void setShouldSaveMoves(boolean shouldSave) {
+        this.shouldSaveMoves = shouldSave;
     }
 }
