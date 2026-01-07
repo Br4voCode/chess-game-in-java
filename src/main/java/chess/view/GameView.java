@@ -5,6 +5,7 @@ import chess.game.AIMatch;
 import chess.game.AIPlayer;
 import chess.game.Game;
 import chess.game.GameReconstructor;
+import chess.game.GameSettings;
 import chess.game.HumanPlayer;
 import chess.model.PieceColor;
 import chess.view.components.StatusBar;
@@ -39,26 +40,65 @@ public class GameView {
     private boolean shouldLoadHistory;
     private boolean shouldStartAIVsAI;
     private AIMatch aiMatch;
+    private PieceColor humanPlayerColor = PieceColor.WHITE;
+    private int aiSearchDepth = 3;
 
     private Button undoButton;
     private Button redoButton;
 
     public GameView() {
-        this(false, false, false);
+        this(GameSettings.humanVsAI(PieceColor.WHITE, GameSettings.DEFAULT_DEPTH));
+    }
+
+    public GameView(PieceColor humanColor, int aiDepth) {
+        this(GameSettings.humanVsAI(humanColor, aiDepth));
+    }
+
+    public GameView(GameSettings settings) {
+        this(false, settings);
+    }
+
+    public GameView(boolean loadFromHistory, GameSettings settings) {
+        this(loadFromHistory,
+                settings != null && settings.isPlayerVsPlayer(),
+                settings != null && settings.isAIVsAI(),
+                resolveHumanColor(settings),
+                resolveDepth(settings));
     }
 
     public GameView(boolean loadFromHistory) {
-        this(loadFromHistory, false, false);
+        this(loadFromHistory, GameSettings.humanVsAI(PieceColor.WHITE, GameSettings.DEFAULT_DEPTH));
     }
 
     public GameView(boolean loadFromHistory, boolean isPlayerVsPlayer) {
-        this(loadFromHistory, isPlayerVsPlayer, false);
+        this(loadFromHistory, isPlayerVsPlayer, false, PieceColor.WHITE, GameSettings.DEFAULT_DEPTH);
     }
 
     public GameView(boolean loadFromHistory, boolean isPlayerVsPlayer, boolean isAIVsAI) {
+        this(loadFromHistory, isPlayerVsPlayer, isAIVsAI, PieceColor.WHITE, GameSettings.DEFAULT_DEPTH);
+    }
+
+    private static PieceColor resolveHumanColor(GameSettings settings) {
+        if (settings == null || settings.isPlayerVsPlayer() || settings.isAIVsAI()) {
+            return PieceColor.WHITE;
+        }
+        return settings.getHumanColor();
+    }
+
+    private static int resolveDepth(GameSettings settings) {
+        if (settings == null) {
+            return GameSettings.DEFAULT_DEPTH;
+        }
+        return settings.getAiDepth();
+    }
+
+    private GameView(boolean loadFromHistory, boolean isPlayerVsPlayer, boolean isAIVsAI,
+            PieceColor humanColor, int aiDepth) {
         this.shouldLoadHistory = loadFromHistory;
+        this.humanPlayerColor = humanColor != null ? humanColor : PieceColor.WHITE;
+        this.aiSearchDepth = Math.max(1, Math.min(8, aiDepth));
         this.shouldStartAIVsAI = false;
-        initializeComponents(loadFromHistory, isPlayerVsPlayer, isAIVsAI);
+        initializeComponents(loadFromHistory, isPlayerVsPlayer, isAIVsAI, this.humanPlayerColor, this.aiSearchDepth);
         setupLayout();
         updateUIFromController();
 
@@ -69,6 +109,8 @@ public class GameView {
         // Iniciar partida IA vs IA si es necesario (tanto para nuevas como cargadas)
         if (shouldStartAIVsAI) {
             startAIVsAIMatch();
+        } else if (!isPlayerVsPlayer && controller != null && this.humanPlayerColor == PieceColor.BLACK) {
+            controller.triggerAIMoveIfNeeded();
         }
 
         // Si cargamos una partida PvAI y es el turno de la IA, activar su jugada
@@ -77,12 +119,13 @@ public class GameView {
         }
     }
 
-    private void initializeComponents(boolean loadFromHistory, boolean isPlayerVsPlayer, boolean isAIVsAI) {
+    private void initializeComponents(boolean loadFromHistory, boolean isPlayerVsPlayer, boolean isAIVsAI,
+            PieceColor humanColor, int aiDepth) {
         Game game;
         boolean shouldStartAIMatch = false;
+        int depth = Math.max(1, Math.min(8, aiDepth));
 
         if (loadFromHistory && StartScreen.hasGameHistory()) {
-            // Cargar partida anterior y determinar el modo de juego guardado
             chess.history.GameMetadata.GameMode savedMode = chess.game.GameReconstructor.getGameMode(StartScreen.getHistoryFilePath());
             
             if (savedMode == chess.history.GameMetadata.GameMode.PVP) {
@@ -111,11 +154,34 @@ public class GameView {
                 isPlayerVsPlayer = false;
                 isAIVsAI = false;
             }
+            if (isAIVsAI) {
+                game = GameReconstructor.reconstructGameFromHistory(
+                        StartScreen.getHistoryFilePath(),
+                        new AIPlayer(PieceColor.WHITE, depth),
+                        new AIPlayer(PieceColor.BLACK, depth));
+            } else if (isPlayerVsPlayer) {
+                game = GameReconstructor.reconstructGameFromHistory(
+                        StartScreen.getHistoryFilePath(),
+                        new HumanPlayer(),
+                        new HumanPlayer());
+            } else {
+                if (humanColor == PieceColor.WHITE) {
+                    game = GameReconstructor.reconstructGameFromHistory(
+                            StartScreen.getHistoryFilePath(),
+                            new HumanPlayer(),
+                            new AIPlayer(PieceColor.BLACK, depth));
+                } else {
+                    game = GameReconstructor.reconstructGameFromHistory(
+                            StartScreen.getHistoryFilePath(),
+                            new AIPlayer(PieceColor.WHITE, depth),
+                            new HumanPlayer());
+                }
+            }
         } else {
 
             if (isAIVsAI) {
 
-                game = new Game(new AIPlayer(PieceColor.WHITE, 3), new AIPlayer(PieceColor.BLACK, 3));
+                game = new Game(new AIPlayer(PieceColor.WHITE, depth), new AIPlayer(PieceColor.BLACK, depth));
                 game.setGameMode(chess.history.GameMetadata.GameMode.AIVAI);
                 shouldStartAIMatch = true;
             } else if (isPlayerVsPlayer) {
@@ -123,14 +189,22 @@ public class GameView {
                 game = new Game(new HumanPlayer(), new HumanPlayer());
                 game.setGameMode(chess.history.GameMetadata.GameMode.PVP);
             } else {
-
-                game = new Game(new HumanPlayer(), new AIPlayer(PieceColor.BLACK, 3));
+                if (humanColor == PieceColor.WHITE) {
+                    game = new Game(new HumanPlayer(), new AIPlayer(PieceColor.BLACK, depth));
+                } else {
+                    game = new Game(new AIPlayer(PieceColor.WHITE, depth), new HumanPlayer());
+                }
                 game.setGameMode(chess.history.GameMetadata.GameMode.PVAI);
             }
         }
 
         this.gameInstance = game;
         this.chessBoard = new ChessBoard();
+        PieceColor bottomColor = PieceColor.WHITE;
+        if (!isPlayerVsPlayer && !isAIVsAI) {
+            bottomColor = humanColor;
+        }
+        this.chessBoard.setBottomColor(bottomColor);
         this.statusBar = new StatusBar();
         this.controller = new GameController(game, chessBoard, statusBar, isPlayerVsPlayer, isAIVsAI);
         this.controller.setGameView(this);

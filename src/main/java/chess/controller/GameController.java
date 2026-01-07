@@ -649,6 +649,13 @@ public class GameController {
     }
 
     /**
+     * Allows the view to request an AI move when it's the AI's turn (e.g., when the human plays with black).
+     */
+    public void triggerAIMoveIfNeeded() {
+        handleAITurn();
+    }
+
+    /**
      * AI vs AI mode uses {@link chess.game.AIMatch} which drives moves via
      * {@code executeMoveWithAnimation}. We still want to show the end screen when
      * the match ends, so we expose a small hook for GameView.
@@ -711,6 +718,7 @@ public class GameController {
         }
         updateHistoryNavigationButtons();
         statusBar.setStatus("New game started. " + game.getTurn() + " to move.");
+        triggerAIMoveIfNeeded();
     }
 
     public Position getSelectedPosition() {

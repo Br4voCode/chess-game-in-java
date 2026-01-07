@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 import chess.model.Board;
 import chess.model.Move;
 import chess.model.Piece;
+import chess.model.PieceColor;
 import chess.model.Position;
 import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;
@@ -27,6 +28,7 @@ public class ChessBoard {
 	private Consumer<Position> squareClickListener;
 	private Board currentBoard;
 	private StackPane boardContainer;
+    private boolean isFlipped = false;
 
 	public ChessBoard() {
 		initializeBoard();
@@ -79,6 +81,8 @@ public class ChessBoard {
 
 		boardContainer.widthProperty().addListener((obs, o, n) -> resizeBoardToContainer());
 		boardContainer.heightProperty().addListener((obs, o, n) -> resizeBoardToContainer());
+
+		applyOrientation();
 	}
 
 	private void resizeBoardToContainer() {
@@ -99,6 +103,42 @@ public class ChessBoard {
 
 	public void setCurrentBoard(Board board) {
 		this.currentBoard = board;
+	}
+
+	public void setBottomColor(PieceColor bottomColor) {
+		PieceColor effectiveColor = bottomColor != null ? bottomColor : PieceColor.WHITE;
+		boolean shouldFlip = effectiveColor == PieceColor.BLACK;
+		if (this.isFlipped == shouldFlip) {
+			return;
+		}
+		this.isFlipped = shouldFlip;
+		applyOrientation();
+	}
+
+	private void applyOrientation() {
+		if (squares == null) {
+			return;
+		}
+		for (int row = 0; row < 8; row++) {
+			for (int col = 0; col < 8; col++) {
+				ChessSquare square = squares[row][col];
+				if (square == null) {
+					continue;
+				}
+				int displayRow = mapRow(row);
+				int displayCol = mapCol(col);
+				GridPane.setRowIndex(square.getRoot(), displayRow);
+				GridPane.setColumnIndex(square.getRoot(), displayCol);
+			}
+		}
+	}
+
+	private int mapRow(int logicalRow) {
+		return isFlipped ? 7 - logicalRow : logicalRow;
+	}
+
+	private int mapCol(int logicalCol) {
+		return isFlipped ? 7 - logicalCol : logicalCol;
 	}
 
 	public void updateSquare(Position pos, String pieceSymbol, boolean isSelected,
@@ -482,8 +522,10 @@ public class ChessBoard {
 		double boardCenterX = boardSize / 2.0;
 		double boardCenterY = boardSize / 2.0;
 
-		double x = (pos.getCol() * squareSize) - boardCenterX + (squareSize / 2);
-		double y = (pos.getRow() * squareSize) - boardCenterY + (squareSize / 2);
+		int displayCol = mapCol(pos.getCol());
+		int displayRow = mapRow(pos.getRow());
+		double x = (displayCol * squareSize) - boardCenterX + (squareSize / 2);
+		double y = (displayRow * squareSize) - boardCenterY + (squareSize / 2);
 
 		return new double[] { x, y };
 	}
