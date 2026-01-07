@@ -60,8 +60,7 @@ public class Board {
     }
 
     /**
-     * Apply move to this board (mutates). Handles pawn promotion to queen by default and castling.
-     * Returns the captured piece if any, null otherwise.
+     * Apply move to this board (mutates). Handles pawn promotion.
      */
     public Piece movePiece(Move move) {
         Position from = move.getFrom();
@@ -93,12 +92,15 @@ public class Board {
             ((chess.model.pieces.Rook) p).setHasMoved(true);
         }
 
+        // Handle pawn promotion
         if (p.getType() == PieceType.PAWN) {
             if ((p.getColor() == PieceColor.WHITE && to.getRow() == 0) ||
                 (p.getColor() == PieceColor.BLACK && to.getRow() == 7)) {
-                Piece promotion = move.getPromotion();
-                if (promotion != null) {
-                    setPieceAt(to, promotion);
+                
+                // Use specified promotion piece or default to queen
+                Piece promotionPiece = move.getPromotion();
+                if (promotionPiece != null) {
+                    setPieceAt(to, promotionPiece);
                 } else {
                     setPieceAt(to, new Queen(p.getColor()));
                 }
