@@ -1,6 +1,7 @@
 package chess;
 
 import chess.view.GameView;
+import chess.view.PieceImageLoader;
 import chess.view.StartScreen;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -8,17 +9,19 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 public class Main extends Application {
-    private Stage primaryStage;
     private StackPane root;
     private StartScreen startScreen;
     private GameView currentGameView;
 
     @Override
     public void start(Stage primaryStage) {
-        this.primaryStage = primaryStage;
         primaryStage.setTitle("Chess with JavaFX");
         primaryStage.setMinWidth(800);
         primaryStage.setMinHeight(600);
+
+        // Precargar imágenes de piezas ANTES de generar la UI del juego.
+        // Así evitamos tirones cuando se dibujan por primera vez las piezas.
+        PieceImageLoader.preloadAllPieceImages();
         
         // Crear el contenedor principal
         root = new StackPane();

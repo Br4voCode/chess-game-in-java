@@ -66,6 +66,12 @@ public class GameController {
     public void setGameView(chess.view.GameView gameView) {
         this.gameView = gameView;
         updateUI(); // Sincronizar UI al vincular la vista
+
+        // Si venimos de cargar una partida, puede haber historial aplicado.
+        // Aseguramos que la navegación no quede bloqueada salvo que el juego esté realmente terminado.
+        if (game != null && !game.isGameOver()) {
+            isHistoryNavigationLocked = false;
+        }
         updateHistoryNavigationButtons();
     }
 

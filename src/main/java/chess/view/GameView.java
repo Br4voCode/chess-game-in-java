@@ -181,6 +181,15 @@ public class GameView {
 
         navBox.getChildren().addAll(undoButton, redoButton);
 
+        // Importante: el controller puede haber intentado habilitar/deshabilitar estos botones
+        // ANTES de que existieran (setGameView se llama en initializeComponents).
+        // Re-sincronizamos aquí con el estado real del StepHistory.
+        if (controller != null && gameInstance != null && gameInstance.getStepHistory() != null) {
+            boolean canUndo = gameInstance.getStepHistory().canUndo();
+            boolean canRedo = gameInstance.getStepHistory().canRedo();
+            setHistoryNavigationEnabled(canUndo, canRedo);
+        }
+
         // Información del turno
         Label turnLabel = new Label("Current turn:");
         turnLabel.setStyle("-fx-text-fill: #bbbbbb;");

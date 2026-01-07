@@ -1,5 +1,9 @@
 package chess.view;
 
+import java.io.InputStream;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
@@ -9,6 +13,14 @@ import javafx.scene.image.ImageView;
 public class PieceImageLoader {
     private static final String IMAGE_PATH = "/images/pieces/classic/";
     private static final double DEFAULT_SIZE = 24;
+
+    /**
+     * Desactiva logs ruidosos por defecto; si necesitás debug visual, ponelo en true.
+     */
+    private static final boolean DEBUG = false;
+
+    /** Cache global de imágenes para evitar decodificar PNG en cada repaint. */
+    private static final ConcurrentMap<String, Image> IMAGE_CACHE = new ConcurrentHashMap<>();
 
     /**
      * Obtiene el nombre del archivo de imagen para una pieza específica
@@ -36,26 +48,51 @@ public class PieceImageLoader {
     }
 
     /**
-     * Carga una imagen de una pieza y devuelve un ImageView con el tamaño especificado
+     * Devuelve la Image cacheada para la pieza o null si no existe.
+     *
+     * Nota: devolvemos Image (no ImageView) para poder reusarla entre casillas.
      */
-    public static ImageView loadPieceImage(String pieceSymbol, double size) {
+    public static Image loadPieceImageRaw(String pieceSymbol) {
         String fileName = getImageFileName(pieceSymbol);
         if (fileName == null) {
             return null;
         }
 
-        try {
-            Image image = new Image(PieceImageLoader.class.getResourceAsStream(IMAGE_PATH + fileName));
-            ImageView imageView = new ImageView(image);
-            imageView.setFitWidth(size);
-            imageView.setFitHeight(size);
-            imageView.setPreserveRatio(true);
-            return imageView;
-        } catch (Exception e) {
-            System.err.println("Error loading piece image: " + fileName);
-            e.printStackTrace();
+        final String resourcePath = IMAGE_PATH + fileName;
+        return IMAGE_CACHE.computeIfAbsent(resourcePath, p -> {
+            try (InputStream in = PieceImageLoader.class.getResourceAsStream(p)) {
+                if (in == null) {
+                    if (DEBUG) {
+                        System.err.println("Piece image not found: " + p);
+                    }
+                    return null;
+                }
+
+                // requestedWidth/Height=0 => tamaño original; preservamos ratio y suavizado.
+                return new Image(in, 0.0, 0.0, true, true);
+            } catch (Exception e) {
+                if (DEBUG) {
+                    System.err.println("Error loading piece image: " + p + " - " + e.getMessage());
+                }
+                return null;
+            }
+        });
+    }
+
+    /**
+     * Carga una imagen de una pieza y devuelve un ImageView con el tamaño especificado
+     */
+    public static ImageView loadPieceImage(String pieceSymbol, double size) {
+        Image image = loadPieceImageRaw(pieceSymbol);
+        if (image == null) {
             return null;
         }
+
+        ImageView imageView = new ImageView(image);
+        imageView.setFitWidth(size);
+        imageView.setFitHeight(size);
+        imageView.setPreserveRatio(true);
+        return imageView;
     }
 
     /**
@@ -63,5 +100,29 @@ public class PieceImageLoader {
      */
     public static ImageView loadPieceImage(String pieceSymbol) {
         return loadPieceImage(pieceSymbol, DEFAULT_SIZE);
+    }
+
+    /**
+     * Precarga todas las imágenes de piezas en el cache.
+     *
+     * Útil para que al entrar al juego la UI no tenga "stutter" por I/O/decodificación.
+     * Se puede invocar al inicio de la app (por ejemplo en el start()).
+     */
+    public static void preloadAllPieceImages() {
+        // Blancas
+        loadPieceImageRaw("♔");
+        loadPieceImageRaw("♕");
+        loadPieceImageRaw("♖");
+        loadPieceImageRaw("♗");
+        loadPieceImageRaw("♘");
+        loadPieceImageRaw("♙");
+
+        // Negras
+        loadPieceImageRaw("♚");
+        loadPieceImageRaw("♛");
+        loadPieceImageRaw("♜");
+        loadPieceImageRaw("♝");
+        loadPieceImageRaw("♞");
+        loadPieceImageRaw("♟");
     }
 }
