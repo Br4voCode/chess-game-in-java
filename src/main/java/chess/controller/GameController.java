@@ -309,6 +309,25 @@ public class GameController {
             return;
         }
 
+        // In AI vs AI mode, prevent all human interaction
+        if (isAIVsAIMode) {
+            statusBar.setStatus("AI vs AI mode - no manual moves allowed");
+            return;
+        }
+
+        // In Human vs AI mode, prevent human from moving during AI turns
+        if (!isTwoPlayerMode) {
+            PieceColor currentTurn = game.getTurn();
+            chess.game.Player currentPlayer = (currentTurn == PieceColor.WHITE) 
+                ? game.getWhitePlayer() 
+                : game.getBlackPlayer();
+            
+            if (currentPlayer instanceof AIPlayer) {
+                statusBar.setStatus("Please wait for AI to move...");
+                return;
+            }
+        }
+
         Board board = game.getBoard();
         PieceColor currentTurn = game.getTurn();
         Piece clickedPiece = board.getPieceAt(position);
