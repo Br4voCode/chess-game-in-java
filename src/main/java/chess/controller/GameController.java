@@ -35,6 +35,7 @@ public class GameController {
     private StatusBar statusBar;
     private chess.view.GameView gameView;
     private Position selectedPosition;
+    private Move hintedMove;
     private boolean isAnimating = false;
     private boolean isTwoPlayerMode = false;
     private boolean isAIVsAIMode = false;
@@ -425,6 +426,7 @@ public class GameController {
 
             chessBoard.clearHighlights();
             selectedPosition = null;
+            hintedMove = null;
             statusBar.setStatus(currentTurn + " to move. Select a piece.");
             return;
         }
@@ -436,6 +438,7 @@ public class GameController {
             }
 
             selectedPosition = position;
+            hintedMove = null;
             List<Move> allPossibleMoves = RulesEngine.legalMoves(game.getBoard(), currentTurn);
 
             List<Move> pieceMoves = allPossibleMoves.stream()
@@ -463,15 +466,23 @@ public class GameController {
                 chessBoard.clearHighlights();
                 selectedPosition = null;
             }
+            hintedMove = null;
         }
     }
 
     private void handleMoveAttempt(Position targetPosition, PieceColor currentTurn) {
         Move attemptedMove = new Move(selectedPosition, targetPosition);
 
+        // Check if user is clicking on the hinted destination square
+        if (hintedMove != null && hintedMove.getTo().equals(targetPosition)) {
+            // Prioritize the hinted move
+            attemptedMove = hintedMove;
+            hintedMove = null;
+        }
+
         if (isMoveLegal(attemptedMove, currentTurn)) {
 
-            Piece movingPiece = game.getBoard().getPieceAt(selectedPosition);
+            Piece movingPiece = game.getBoard().getPieceAt(attemptedMove.getFrom());
             if (isPawnPromotion(movingPiece, targetPosition)) {
                 handlePawnPromotion(attemptedMove);
             } else {
@@ -499,6 +510,7 @@ public class GameController {
                 selectedPosition = null;
                 updateBoardState();
             }
+            hintedMove = null;
         }
     }
 
@@ -869,6 +881,7 @@ public class GameController {
         game.resetForNewGame();
         game.startClock();
         selectedPosition = null;
+        hintedMove = null;
         isAnimating = false;
         isHistoryNavigationLocked = false;
         chessBoard.clearHighlights();
@@ -979,11 +992,13 @@ public class GameController {
 
             javafx.application.Platform.runLater(() -> {
                 if (hint != null) {
+                    hintedMove = hint;
                     chessBoard.highlightHint(hint);
                     statusBar.setStatus("Pista: " +
                             positionToChessNotation(hint.getFrom()) + " -> " +
                             positionToChessNotation(hint.getTo()));
                 } else {
+                    hintedMove = null;
                     statusBar.setStatus("No se encontró ninguna pista.");
                 }
             });
