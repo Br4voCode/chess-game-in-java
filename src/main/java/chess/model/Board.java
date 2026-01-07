@@ -15,6 +15,7 @@ public class Board {
     private Position lastMoveFrom;
     private Position lastMoveTo;
     private Move lastMove;
+    private Position enPassantTarget; // Position where en passant capture is possible
 
     public Board() { 
         initialize(); 
@@ -29,6 +30,7 @@ public class Board {
         lastMove = null;
         lastMoveFrom = null;
         lastMoveTo = null;
+        enPassantTarget = null;
 
         // white pieces (bottom side rows 7 and 6)
         grid[7][0] = new Rook(PieceColor.WHITE);
@@ -77,8 +79,33 @@ public class Board {
         lastMoveFrom = from;
         lastMoveTo = to;
         
-        // Capture the piece at the destination (if any)
-        Piece capturedPiece = getPieceAt(to);
+        // Store previous en passant target before resetting
+        Position previousEnPassantTarget = enPassantTarget;
+        
+        // Reset en passant target
+        enPassantTarget = null;
+        
+        // Check if this is a 2-square pawn move (sets up en passant for next turn)
+        if (p.getType() == PieceType.PAWN && Math.abs(to.getRow() - from.getRow()) == 2) {
+            // The en passant target is the square the pawn passed over
+            int enPassantRow = from.getRow() + (to.getRow() - from.getRow()) / 2;
+            enPassantTarget = new Position(enPassantRow, from.getCol());
+        }
+        
+        // Handle en passant capture
+        Piece capturedPiece = null;
+        if (p.getType() == PieceType.PAWN && previousEnPassantTarget != null && to.equals(previousEnPassantTarget)) {
+            // This is an en passant capture - remove the pawn that was captured
+            Position capturedPawnPos = new Position(
+                p.getColor() == PieceColor.WHITE ? to.getRow() + 1 : to.getRow() - 1,
+                to.getCol()
+            );
+            capturedPiece = getPieceAt(capturedPawnPos);
+            setPieceAt(capturedPawnPos, null);
+        } else {
+            // Normal capture
+            capturedPiece = getPieceAt(to);
+        }
         
         if (p.getType() == PieceType.KING) {
             if (from.getRow() == to.getRow() && Math.abs(from.getCol() - to.getCol()) == 2) {
@@ -372,6 +399,7 @@ public class Board {
         b.lastMove = this.lastMove;
         b.lastMoveFrom = this.lastMoveFrom;
         b.lastMoveTo = this.lastMoveTo;
+        b.enPassantTarget = this.enPassantTarget;
         return b;
     }
 
@@ -397,6 +425,10 @@ public class Board {
 
     public Position getLastMoveTo() {
         return lastMoveTo;
+    }
+
+    public Position getEnPassantTarget() {
+        return enPassantTarget;
     }
 
     /**
@@ -440,7 +472,25 @@ public class Board {
      */
     public boolean isCaptureMove(Move move) {
         Piece targetPiece = getPieceAt(move.getTo());
-        return targetPiece != null;
+        if (targetPiece != null) return true;
+        
+        // Check if this is an en passant capture
+        if (enPassantTarget != null && move.getTo().equals(enPassantTarget)) {
+            Piece movingPiece = getPieceAt(move.getFrom());
+            if (movingPiece != null && movingPiece.getType() == PieceType.PAWN) {
+                // Check if there's an enemy pawn adjacent to the en passant target
+                Position capturedPawnPos = new Position(
+                    movingPiece.getColor() == PieceColor.WHITE ? 
+                        move.getTo().getRow() + 1 : move.getTo().getRow() - 1,
+                    move.getTo().getCol()
+                );
+                Piece adjacentPawn = getPieceAt(capturedPawnPos);
+                return adjacentPawn != null && adjacentPawn.getType() == PieceType.PAWN && 
+                       adjacentPawn.getColor() != movingPiece.getColor();
+            }
+        }
+        
+        return false;
     }
 
     /**
@@ -455,5 +505,6 @@ public class Board {
         lastMove = null;
         lastMoveFrom = null;
         lastMoveTo = null;
+        enPassantTarget = null;
     }
 }

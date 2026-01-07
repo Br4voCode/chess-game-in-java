@@ -251,6 +251,20 @@ public class GameController {
 
                         chessBoard.updateSingleSquare(from);
                         chessBoard.updateSingleSquare(to);
+                        
+                        // For en passant captures, also update the square where the captured pawn was removed
+                        if (movedPiece.getType() == PieceType.PAWN && capturedPiece != null && 
+                            capturedPiece.getType() == PieceType.PAWN) {
+                            // Check if this was an en passant capture (captured piece is not at the destination)
+                            Position enPassantCapturedPos = new Position(
+                                movedPiece.getColor() == PieceColor.WHITE ? to.getRow() + 1 : to.getRow() - 1,
+                                to.getCol()
+                            );
+                            if (game.getBoard().getPieceAt(enPassantCapturedPos) == null) {
+                                // This was likely an en passant capture, update that square too
+                                chessBoard.updateSingleSquare(enPassantCapturedPos);
+                            }
+                        }
 
                         String moveDescription = movedPiece.getType() +
                                 " " + positionToChessNotation(from) +
