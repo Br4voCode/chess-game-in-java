@@ -30,6 +30,6 @@ if exist "src\main\resources" xcopy "src\main\resources" "target\classes" /E /I 
 
 REM Ejecutar la aplicacion con JavaFX
 echo Ejecutando la aplicacion...
-java --module-path "%JAVAFX_CONTROLS%;%JAVAFX_BASE%;%JAVAFX_GRAPHICS%;%JAVAFX_FXML%" --add-modules javafx.controls,javafx.fxml -cp "target\classes" chess.Main
+java --module-path "%JAVAFX_CONTROLS%;%JAVAFX_BASE%;%JAVAFX_GRAPHICS%;%JAVAFX_FXML%" --add-modules javafx.controls,javafx.fxml -cp "target\classes" chess.AppLauncher
 
 pause

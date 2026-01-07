@@ -47,7 +47,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>chess.Main</mainClass>
+                    <mainClass>chess.AppLauncher</mainClass>
                 </configuration>
             </plugin>
             
@@ -56,7 +56,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
-                    <mainClass>chess.Main</mainClass>
+                    <mainClass>chess.AppLauncher</mainClass>
                     <args>
                         <arg>--module-path</arg>
                         <arg>${javafx.runtime.path}</arg>
