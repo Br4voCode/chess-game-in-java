@@ -30,13 +30,19 @@ public class GameController {
     private chess.view.GameView gameView;
     private Position selectedPosition;
     private boolean isAnimating = false;
+    private boolean isTwoPlayerMode = false;
 
     public GameController(Game game, ChessBoard chessBoard, StatusBar statusBar) {
+        this(game, chessBoard, statusBar, false);
+    }
+
+    public GameController(Game game, ChessBoard chessBoard, StatusBar statusBar, boolean isTwoPlayerMode) {
         this.game = game;
         this.chessBoard = chessBoard;
         this.statusBar = statusBar;
         this.gameView = null;
         this.selectedPosition = null;
+        this.isTwoPlayerMode = isTwoPlayerMode;
 
         chessBoard.setCurrentBoard(game.getBoard());
         game.startClock();
@@ -329,6 +335,11 @@ public class GameController {
     }
 
     private void handleAITurn() {
+        // Skip AI logic in two-player mode
+        if (isTwoPlayerMode) {
+            return;
+        }
+        
         Move aiMove = game.getAIMoveIfAny();
         if (aiMove != null) {
             new Thread(() -> {
