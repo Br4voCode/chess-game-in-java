@@ -60,6 +60,7 @@ public class GameView {
     // Navigation buttons
     private Button undoButton;
     private Button redoButton;
+    private Button hintButton;
     private LogConsole logConsole;
     private Runnable onBackToMenu;
 
@@ -310,7 +311,7 @@ public class GameView {
             updateUIFromController();
         });
 
-        Button hintButton = new Button("Hint");
+        hintButton = new Button("Hint");
         hintButton.setStyle("-fx-background-color: #2196f3; -fx-text-fill: white; -fx-font-weight: bold;");
         hintButton.setMaxWidth(Double.MAX_VALUE);
         hintButton.setOnAction(e -> {
@@ -369,17 +370,32 @@ public class GameView {
 
         Pane spacer = new Pane();
         VBox.setVgrow(spacer, Priority.ALWAYS);
-        panel.getChildren().addAll(
-                panelTitle,
-                newGameButton,
-                navBox,
-                hintButton,
-                new Pane(),
-                turnLabel, turnValue,
-                logsTitle, logsContainer,
-                spacer,
-                gameStateLabel, gameStateValue,
-                backToMenuButton);
+        
+        // Add hint button only if not in AI vs AI mode
+        if (isAIVsAIMode) {
+            panel.getChildren().addAll(
+                    panelTitle,
+                    newGameButton,
+                    navBox,
+                    new Pane(),
+                    turnLabel, turnValue,
+                    logsTitle, logsContainer,
+                    spacer,
+                    gameStateLabel, gameStateValue,
+                    backToMenuButton);
+        } else {
+            panel.getChildren().addAll(
+                    panelTitle,
+                    newGameButton,
+                    navBox,
+                    hintButton,
+                    new Pane(),
+                    turnLabel, turnValue,
+                    logsTitle, logsContainer,
+                    spacer,
+                    gameStateLabel, gameStateValue,
+                    backToMenuButton);
+        }
 
         return panel;
     }
@@ -393,6 +409,15 @@ public class GameView {
         }
         if (redoButton != null) {
             redoButton.setDisable(!canRedo);
+        }
+    }
+
+    /**
+     * Called by the controller to disable the hint button when the game ends.
+     */
+    public void setHintButtonEnabled(boolean enabled) {
+        if (hintButton != null) {
+            hintButton.setDisable(!enabled);
         }
     }
 

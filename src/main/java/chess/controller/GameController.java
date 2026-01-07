@@ -109,6 +109,7 @@ public class GameController {
             isHistoryNavigationLocked = false;
         }
         updateHistoryNavigationButtons();
+        updateHintButtonState();
     }
 
     private void updateHistoryNavigationButtons() {
@@ -141,6 +142,19 @@ public class GameController {
         boolean canUndo = game.getStepHistory() != null && game.getStepHistory().canUndo();
         boolean canRedo = game.getStepHistory() != null && game.getStepHistory().canRedo();
         gameView.setHistoryNavigationEnabled(canUndo, canRedo);
+    }
+
+    private void updateHintButtonState() {
+        if (gameView == null || game == null) {
+            return;
+        }
+
+        // Disable hint button in AI vs AI mode or when game is over
+        if (isAIVsAIMode || game.isGameOver()) {
+            gameView.setHintButtonEnabled(false);
+        } else {
+            gameView.setHintButtonEnabled(true);
+        }
     }
 
     /**
@@ -435,6 +449,9 @@ public class GameController {
         if (result != null) {
             game.setGameOver(true, result);
             isHistoryNavigationLocked = true;
+            if (gameView != null) {
+                gameView.setHintButtonEnabled(false);
+            }
         }
     }
 
@@ -641,6 +658,9 @@ public class GameController {
                             showEndScreenIfNeeded(result);
                             isHistoryNavigationLocked = true;
                             updateHistoryNavigationButtons();
+                            if (gameView != null) {
+                                gameView.setHintButtonEnabled(false);
+                            }
                             isAnimating = false;
                             return;
                         }
@@ -730,6 +750,9 @@ public class GameController {
                                     result.getGameResult() != null ? result.getGameResult() : moveDescription);
                             game.stopClock();
                             showEndScreenIfNeeded(result);
+                            if (gameView != null) {
+                                gameView.setHintButtonEnabled(false);
+                            }
                             isAnimating = false;
                             return;
                         }
@@ -1011,6 +1034,7 @@ public class GameController {
             gameView.updateTimers();
         }
         updateHistoryNavigationButtons();
+        updateHintButtonState();
         statusBar.setStatus("New game started. " + game.getTurn() + " to move.");
         triggerAIMoveIfNeeded();
     }
@@ -1122,8 +1146,21 @@ public class GameController {
     }
 
     public Move bestMove() {
-
-        chess.game.AIPlayer hintAI = new chess.game.AIPlayer(game.getTurn(), 3);
+        // Get the AI depth from the current game's AI player
+        int aiDepth = 3; // Default depth
+        
+        PieceColor currentTurn = game.getTurn();
+        chess.game.Player whitePlayer = game.getWhitePlayer();
+        chess.game.Player blackPlayer = game.getBlackPlayer();
+        
+        // Check if either player is an AI and get their depth
+        if (whitePlayer instanceof AIPlayer) {
+            aiDepth = ((AIPlayer) whitePlayer).getDepth();
+        } else if (blackPlayer instanceof AIPlayer) {
+            aiDepth = ((AIPlayer) blackPlayer).getDepth();
+        }
+        
+        chess.game.AIPlayer hintAI = new chess.game.AIPlayer(currentTurn, aiDepth);
         return hintAI.chooseMove(game.getBoard());
     }
 }

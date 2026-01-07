@@ -20,6 +20,10 @@ public class AIPlayer extends Player {
         this.depth = depth;
     }
 
+    public int getDepth() {
+        return depth;
+    }
+
     @Override
     public Move chooseMove(Board board) {
         GameLogger logger = GameLogger.getInstance();
