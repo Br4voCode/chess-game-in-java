@@ -43,12 +43,13 @@ public final class RulesEngine {
         boolean checkmate = isCheckmate(board, sideToMove);
         boolean stalemate = isStalemate(board, sideToMove);
         boolean insufficientMaterial = board.isInsufficientMaterial();
+        boolean threefoldRepetition = game.hasThreefoldRepetition();
 
-        boolean gameOver = checkmate || stalemate || insufficientMaterial;
+        boolean gameOver = checkmate || stalemate || insufficientMaterial || threefoldRepetition;
 
         String gameResult;
         if (gameOver) {
-            gameResult = evaluateGameResult(board, sideToMove);
+            gameResult = evaluateGameResult(board, sideToMove, game);
         } else {
             gameResult = game.getGameResult();
         }
@@ -62,6 +63,7 @@ public final class RulesEngine {
                 checkmate,
                 stalemate,
                 insufficientMaterial,
+                threefoldRepetition,
                 gameOver,
                 gameResult);
     }
@@ -95,6 +97,32 @@ public final class RulesEngine {
 
         if (board.isInsufficientMaterial()) {
             return "Draw by insufficient material.";
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns a human-readable game result message including threefold repetition check.
+     * Requires the Game instance to check position history.
+     * Returns null if the game should continue.
+     */
+    public static String evaluateGameResult(Board board, PieceColor sideToMove, Game game) {
+        if (board.isCheckmate(sideToMove)) {
+            PieceColor winner = (sideToMove == PieceColor.WHITE) ? PieceColor.BLACK : PieceColor.WHITE;
+            return "Checkmate! " + winner + " wins!";
+        }
+
+        if (board.isStalemate(sideToMove)) {
+            return "Stalemate! Game drawn.";
+        }
+
+        if (board.isInsufficientMaterial()) {
+            return "Draw by insufficient material.";
+        }
+
+        if (game != null && game.hasThreefoldRepetition()) {
+            return "Draw by threefold repetition.";
         }
 
         return null;
@@ -134,6 +162,7 @@ public final class RulesEngine {
         boolean checkmate = board.isCheckmate(nextTurn);
         boolean stalemate = board.isStalemate(nextTurn);
         boolean insufficient = board.isInsufficientMaterial();
+        boolean threefoldRepetition = game.hasThreefoldRepetition();
         boolean gameOver = game.isGameOver();
         String gameResult = game.getGameResult();
 
@@ -146,6 +175,7 @@ public final class RulesEngine {
                 checkmate,
                 stalemate,
                 insufficient,
+                threefoldRepetition,
                 gameOver,
                 gameResult);
     }

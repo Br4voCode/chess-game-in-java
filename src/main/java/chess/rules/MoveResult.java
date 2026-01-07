@@ -19,6 +19,7 @@ public final class MoveResult {
     private final boolean checkmate;
     private final boolean stalemate;
     private final boolean insufficientMaterial;
+    private final boolean threefoldRepetition;
     private final boolean gameOver;
     private final String gameResult;
 
@@ -31,6 +32,7 @@ public final class MoveResult {
             boolean checkmate,
             boolean stalemate,
             boolean insufficientMaterial,
+            boolean threefoldRepetition,
             boolean gameOver,
             String gameResult) {
         this.moveApplied = moveApplied;
@@ -41,12 +43,13 @@ public final class MoveResult {
         this.checkmate = checkmate;
         this.stalemate = stalemate;
         this.insufficientMaterial = insufficientMaterial;
+        this.threefoldRepetition = threefoldRepetition;
         this.gameOver = gameOver;
         this.gameResult = gameResult;
     }
 
     public static MoveResult notApplied(Move move, PieceColor currentTurn) {
-        return new MoveResult(false, move, currentTurn, null, false, false, false, false, false, null);
+        return new MoveResult(false, move, currentTurn, null, false, false, false, false, false, false, null);
     }
 
     public boolean isMoveApplied() {
@@ -79,6 +82,10 @@ public final class MoveResult {
 
     public boolean isInsufficientMaterial() {
         return insufficientMaterial;
+    }
+
+    public boolean isThreefoldRepetition() {
+        return threefoldRepetition;
     }
 
     public boolean isGameOver() {

@@ -23,6 +23,7 @@ public class Game {
     private boolean shouldSaveMoves = true;
     private Piece lastCapturedPiece = null;
     private GameClock gameClock;
+    private java.util.Map<String, Integer> positionHistory = new java.util.HashMap<>();
 
     public Game(Player white, Player black) {
         this.board = new Board();
@@ -110,6 +111,9 @@ public class Game {
         chess.model.Position enPassantAfter = board.getEnPassantTarget();
         turn = turn.opposite();
         moveCount++;
+
+        String positionKey = generatePositionKey();
+        positionHistory.put(positionKey, positionHistory.getOrDefault(positionKey, 0) + 1);
 
         gameClock.switchPlayer();
 
@@ -231,7 +235,7 @@ public class Game {
 
     private void checkGameState() {
 
-        String result = RulesEngine.evaluateGameResult(board, turn);
+        String result = RulesEngine.evaluateGameResult(board, turn, this);
         if (result != null) {
             gameOver = true;
             gameResult = result;
@@ -279,6 +283,7 @@ public class Game {
         gameClock.reset();
         stepHistory.clear();
         stepHistoryStore.saveApplied(stepHistory);
+        positionHistory.clear();
     }
 
     public boolean undoLastMove() {
@@ -461,5 +466,41 @@ public class Game {
         if (isOver) {
             stopClock();
         }
+    }
+
+    /**
+     * Generate a unique key representing the current board position.
+     * Used for threefold repetition detection.
+     */
+    private String generatePositionKey() {
+        StringBuilder sb = new StringBuilder();
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Piece p = board.getPieceAt(new chess.model.Position(row, col));
+                if (p == null) {
+                    sb.append('.');
+                } else {
+                    char c = p.getType().toString().charAt(0);
+                    sb.append(p.getColor() == PieceColor.WHITE ? Character.toUpperCase(c) : Character.toLowerCase(c));
+                }
+            }
+        }
+        sb.append('_').append(turn);
+        return sb.toString();
+    }
+
+    /**
+     * Check if the current position has occurred three times (threefold repetition).
+     */
+    public boolean hasThreefoldRepetition() {
+        String currentPosition = generatePositionKey();
+        return positionHistory.getOrDefault(currentPosition, 0) >= 3;
+    }
+
+    /**
+     * Get position history for debugging or analysis.
+     */
+    public java.util.Map<String, Integer> getPositionHistory() {
+        return new java.util.HashMap<>(positionHistory);
     }
 }
