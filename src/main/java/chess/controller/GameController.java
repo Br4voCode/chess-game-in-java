@@ -436,6 +436,11 @@ public class GameController {
 
                         if (result.isCheck()) {
                             moveDescription += " - CHECK!";
+                            // Highlight the King in check
+                            Position kingPos = findKingPosition(game.getTurn());
+                            if (kingPos != null) {
+                                chessBoard.highlightKingInCheck(kingPos);
+                            }
                         }
 
                         if (result.isGameOver()) {
@@ -476,6 +481,7 @@ public class GameController {
                 chessBoard.animateMove(move, () -> {
                     MoveResult result = RulesEngine.applyMove(game, move);
                     boolean moveSuccessful = result.isMoveApplied();
+                    boolean isCheckMove = false;
 
                     if (moveSuccessful) {
 
@@ -506,7 +512,8 @@ public class GameController {
                                 " " + positionToChessNotation(from) +
                                 " to " + positionToChessNotation(to);
 
-                        if (result.isCheck()) {
+                        isCheckMove = result.isCheck();
+                        if (isCheckMove) {
                             moveDescription += " - CHECK!";
                         }
 
@@ -542,6 +549,15 @@ public class GameController {
                     }
 
                     chessBoard.highlightMove(move);
+                    
+                    // Apply check highlighting AFTER move highlight so it's not overwritten
+                    if (moveSuccessful && isCheckMove) {
+                        Position kingPos = findKingPosition(game.getTurn());
+                        if (kingPos != null) {
+                            chessBoard.highlightKingInCheck(kingPos);
+                        }
+                    }
+                    
                     isAnimating = false;
                 });
             }
@@ -686,7 +702,19 @@ public class GameController {
 
     private void updateUI() {
         updateBoardState();
-        statusBar.setStatus(game.getTurn() + " to move. Select a piece.");
+        
+        // Check if current player's King is in check
+        MoveResult result = RulesEngine.currentGameState(game);
+        if (result.isCheck()) {
+            Position kingPos = findKingPosition(game.getTurn());
+            if (kingPos != null) {
+                chessBoard.highlightKingInCheck(kingPos);
+            }
+            statusBar.setStatus(game.getTurn() + " to move. King in CHECK!");
+        } else {
+            statusBar.setStatus(game.getTurn() + " to move. Select a piece.");
+        }
+        
         if (gameView != null) {
             gameView.updateUIFromController();
         }
@@ -698,6 +726,20 @@ public class GameController {
         char file = (char) ('a' + pos.getCol());
         int rank = 8 - pos.getRow();
         return "" + file + rank;
+    }
+
+    private Position findKingPosition(PieceColor color) {
+        Board board = game.getBoard();
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Position pos = new Position(row, col);
+                Piece piece = board.getPieceAt(pos);
+                if (piece != null && piece.getType() == PieceType.KING && piece.getColor() == color) {
+                    return pos;
+                }
+            }
+        }
+        return null;
     }
 
     public void resetGame() {

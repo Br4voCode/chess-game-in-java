@@ -37,6 +37,7 @@ public class ChessSquare {
 	private final Color CAPTURE_INDICATOR_COLOR = Color.rgb(255, 100, 100, 0.8);
 	private final Color MOVE_HIGHLIGHT_COLOR = Color.rgb(255, 255, 0, 0.4);
 	private final Color HINT_HIGHLIGHT_COLOR = Color.rgb(0, 255, 255, 0.4);
+	private final Color CHECK_HIGHLIGHT_COLOR = Color.rgb(255, 0, 0, 0.5);
 
 	private InnerShadow innerGlow;
 	private ScaleTransition piecePulseAnimation;
@@ -423,6 +424,21 @@ public class ChessSquare {
 			hintGlow.setColor(Color.CYAN);
 			hintGlow.setRadius(15);
 			background.setEffect(hintGlow);
+		});
+	}
+
+	public void highlightAsCheck() {
+		javafx.application.Platform.runLater(() -> {
+
+			selectionOverlay.setFill(CHECK_HIGHLIGHT_COLOR);
+			selectionOverlay.setVisible(true);
+			selectionOverlay.setOpacity(1.0);
+
+			InnerShadow checkGlow = new InnerShadow();
+			checkGlow.setColor(Color.RED);
+			checkGlow.setRadius(20);
+			checkGlow.setChoke(0.3);
+			background.setEffect(checkGlow);
 		});
 	}
 

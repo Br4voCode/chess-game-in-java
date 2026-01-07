@@ -177,6 +177,10 @@ public class ChessBoard {
 		});
 	}
 
+	public void clearAllHighlightsIncludingCheck() {
+		clearHighlights();
+	}
+
 	public void highlightMove(Move move) {
 		if (move == null)
 			return;
@@ -273,6 +277,24 @@ public class ChessBoard {
 			Piece piece = currentBoard.getPieceAt(pos);
 			String symbol = piece != null ? piece.toUnicode() : "";
 			squares[pos.getRow()][pos.getCol()].updateAppearance(symbol, false, false, false);
+		}
+	}
+
+	public void highlightKingInCheck(Position kingPosition) {
+		if (isValidPosition(kingPosition)) {
+			ChessSquare square = squares[kingPosition.getRow()][kingPosition.getCol()];
+			if (square != null) {
+				square.highlightAsCheck();
+			}
+		}
+	}
+
+	public void clearCheckHighlight(Position kingPosition) {
+		if (isValidPosition(kingPosition)) {
+			ChessSquare square = squares[kingPosition.getRow()][kingPosition.getCol()];
+			if (square != null) {
+				square.clearHighlight();
+			}
 		}
 	}
 
