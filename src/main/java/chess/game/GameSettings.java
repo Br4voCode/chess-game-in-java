@@ -58,6 +58,21 @@ public class GameSettings implements Serializable {
         return !playerVsPlayer && !aiVsAI;
     }
 
+    public static String describeDepth(int depth) {
+        int clamped = Math.max(MIN_DEPTH, Math.min(MAX_DEPTH, depth));
+        String descriptor;
+        if (clamped <= 2) {
+            descriptor = "Relajado";
+        } else if (clamped <= 4) {
+            descriptor = "Equilibrado";
+        } else if (clamped <= 6) {
+            descriptor = "Competitivo";
+        } else {
+            descriptor = "Gran Maestro";
+        }
+        return "Profundidad " + clamped + " · " + descriptor;
+    }
+
     private int clampDepth(int depth) {
         if (depth < MIN_DEPTH) {
             return MIN_DEPTH;

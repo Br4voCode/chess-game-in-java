@@ -287,17 +287,7 @@ public class StartScreen {
     }
 
     private String formatDifficultyLabel(int depth) {
-        String descriptor;
-        if (depth <= 2) {
-            descriptor = "Relajado";
-        } else if (depth <= 4) {
-            descriptor = "Equilibrado";
-        } else if (depth <= 6) {
-            descriptor = "Competitivo";
-        } else {
-            descriptor = "Gran Maestro";
-        }
-        return "Profundidad " + depth + " · " + descriptor;
+        return GameSettings.describeDepth(depth);
     }
 
     private void loadPersistedSettings() {
