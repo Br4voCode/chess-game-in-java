@@ -43,6 +43,13 @@ public class GameView {
     private PieceColor humanPlayerColor = PieceColor.WHITE;
     private int aiSearchDepth = 3;
 
+    // Persist mode flags so other components can ask the view which mode is running.
+    // CRITICAL (comentario hecho por Isaac): esto debe refactorizarse a un único atributo (por ejemplo, un enum/int gameMode)
+    // en lugar de dos booleanos, para evitar combinaciones inválidas y hacer el código más mantenible.
+    private boolean isPlayerVsPlayerMode;
+    private boolean isAIVsAIMode;
+
+    // Navigation buttons
     private Button undoButton;
     private Button redoButton;
     private Runnable onBackToMenu;
@@ -102,6 +109,8 @@ public class GameView {
         this.shouldLoadHistory = loadFromHistory;
         this.humanPlayerColor = humanColor != null ? humanColor : PieceColor.WHITE;
         this.aiSearchDepth = Math.max(1, Math.min(8, aiDepth));
+        this.isPlayerVsPlayerMode = isPlayerVsPlayer;
+        this.isAIVsAIMode = isAIVsAI;
         this.shouldStartAIVsAI = false;
         initializeComponents(loadFromHistory, isPlayerVsPlayer, isAIVsAI, this.humanPlayerColor, this.aiSearchDepth);
         setupLayout();
@@ -122,6 +131,32 @@ public class GameView {
         if (loadFromHistory && !isPlayerVsPlayer && !isAIVsAI && gameInstance != null) {
             triggerAITurnIfNeeded();
         }
+    }
+
+    /**
+     * Returns a numeric representation for the current game mode.
+     *
+     * <ul>
+     *   <li>1 = Player vs Player (PVP)</li>
+     *   <li>2 = Player vs AI (PVAI)</li>
+     *   <li>3 = AI vs AI (AIVAI)</li>
+     * </ul>
+     */
+    public int getGameModeNumber() {
+        return getGameModeNumber(isPlayerVsPlayerMode, isAIVsAIMode);
+    }
+
+    /**
+     * Helper that maps the two existing mode flags to a numeric game mode.
+     */
+    public static int getGameModeNumber(boolean isPlayerVsPlayer, boolean isAIVsAI) {
+        if (isAIVsAI) {
+            return 3;
+        }
+        if (isPlayerVsPlayer) {
+            return 1;
+        }
+        return 2;
     }
 
     private void initializeComponents(boolean loadFromHistory, boolean isPlayerVsPlayer, boolean isAIVsAI,

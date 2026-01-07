@@ -8,6 +8,7 @@ import chess.model.Move;
 import chess.model.Piece;
 import chess.model.PieceColor;
 import chess.model.Position;
+import chess.history.Step;
 import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;
 import javafx.animation.PauseTransition;
@@ -295,6 +296,36 @@ public class ChessBoard {
 			if (square != null) {
 				square.clearHighlight();
 			}
+		}
+	}
+
+	/**
+	 * Updates only the board squares affected by a given history {@link Step}.
+	 *
+	 * <p>
+	 * This is intended to reduce flicker during undo/redo animations: instead of repainting
+	 * the full board, we only repaint the minimal set of squares that may have changed.
+	 */
+	public void updateSquaresForStep(Step step) {
+		if (step == null || currentBoard == null) {
+			return;
+		}
+
+		Move move = step.getMove();
+		if (move != null) {
+			updateSingleSquare(move.getFrom());
+			updateSingleSquare(move.getTo());
+		}
+
+		// Castling also moves the rook.
+		if (step.isCastling() && step.getRookFrom() != null && step.getRookTo() != null) {
+			updateSingleSquare(step.getRookFrom());
+			updateSingleSquare(step.getRookTo());
+		}
+
+		// En-passant removes/restores a pawn from a different square.
+		if (step.isEnPassant() && step.getEnPassantCapturedPawnPos() != null) {
+			updateSingleSquare(step.getEnPassantCapturedPawnPos());
 		}
 	}
 

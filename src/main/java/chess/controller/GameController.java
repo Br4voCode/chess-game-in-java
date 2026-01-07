@@ -77,6 +77,25 @@ public class GameController {
         if (gameView == null || game == null) {
             return;
         }
+
+        // Never allow history navigation during AI vs AI.
+        if (isAIVsAIMode) {
+            gameView.setHistoryNavigationEnabled(false, false);
+            return;
+        }
+
+        // In Player vs AI: disable undo/redo while it's the AI's turn.
+        if (!isTwoPlayerMode) {
+            PieceColor currentTurn = game.getTurn();
+            chess.game.Player currentPlayer = (currentTurn == PieceColor.WHITE)
+                    ? game.getWhitePlayer()
+                    : game.getBlackPlayer();
+            if (currentPlayer instanceof AIPlayer) {
+                gameView.setHistoryNavigationEnabled(false, false);
+                return;
+            }
+        }
+
         if (isHistoryNavigationLocked || game.isGameOver()) {
             gameView.setHistoryNavigationEnabled(false, false);
             return;
@@ -97,31 +116,31 @@ public class GameController {
         if (isAnimating || game == null || gameView == null) {
             return;
         }
+
+        // In Player vs AI mode, undo should revert two plies (AI move + player's move)
+        // so the user can replay their move.
+        int gameMode = RulesEngine.getGameModeNumber(isTwoPlayerMode, isAIVsAIMode);
+        int stepsToUndo = (gameMode == 2) ? 2 : 1;
+
         if (game.isGameOver()) {
             updateHistoryNavigationButtons();
             return;
         }
 
-        Step step = game.getStepHistory() != null ? game.getStepHistory().popForUndo() : null;
-        if (step == null) {
+    chess.history.StepHistory history = game.getStepHistory();
+        Step step1 = history != null ? history.popForUndo() : null;
+        if (step1 == null) {
             updateHistoryNavigationButtons();
             return;
         }
+
+        final Step step2 = (stepsToUndo == 2 && history != null) ? history.popForUndo() : null;
 
         isAnimating = true;
         chessBoard.clearHighlights();
         selectedPosition = null;
 
-        Move forward = step.getMove();
-        Move reverse = new Move(forward.getTo(), forward.getFrom());
-
-        Runnable afterAnim = () -> {
-            applyUndo(step);
-
-            gameView.removeLastMoveFromHistory();
-            if (step.getCapturedPiece() != null) {
-                gameView.removeLastCapturedPiece(step.getCapturedPiece().getColor());
-            }
+    Runnable finishUndoAll = () -> {
             updateBoardState();
             gameView.updateUIFromController();
             gameView.updateTimers();
@@ -134,11 +153,55 @@ public class GameController {
             isAnimating = false;
         };
 
-        if (step.isCastling()) {
-            Move rookReverse = new Move(step.getRookTo(), step.getRookFrom());
-            chessBoard.animateMovesSimultaneously(reverse, rookReverse, afterAnim);
+        Runnable applyUndoStep2 = () -> {
+            // After animating step2, apply its logical undo and finalize.
+            applyUndo(step2);
+            gameView.removeLastMoveFromHistory();
+            if (step2.getCapturedPiece() != null) {
+                gameView.removeLastCapturedPiece(step2.getCapturedPiece().getColor());
+            }
+            // Refresh only affected squares to avoid flicker.
+            chessBoard.updateSquaresForStep(step2);
+            gameView.updateUIFromController();
+            gameView.updateTimers();
+            finishUndoAll.run();
+        };
+
+        Runnable afterAnimStep1 = () -> {
+            // After animating step1, apply its logical undo.
+            applyUndo(step1);
+            gameView.removeLastMoveFromHistory();
+            if (step1.getCapturedPiece() != null) {
+                gameView.removeLastCapturedPiece(step1.getCapturedPiece().getColor());
+            }
+
+            // Refresh only affected squares before starting the second animation to reduce jumps.
+            chessBoard.updateSquaresForStep(step1);
+            gameView.updateUIFromController();
+            gameView.updateTimers();
+
+            // If PVAI and there is a second step, animate it too.
+            if (step2 != null) {
+                Move reverse2 = new Move(step2.getMove().getTo(), step2.getMove().getFrom());
+                if (step2.isCastling()) {
+                    Move rookReverse2 = new Move(step2.getRookTo(), step2.getRookFrom());
+                    chessBoard.animateMovesSimultaneously(reverse2, rookReverse2, applyUndoStep2);
+                } else {
+                    chessBoard.animateMove(reverse2, applyUndoStep2);
+                }
+                return;
+            }
+
+            finishUndoAll.run();
+        };
+
+        // Animate step1 (most recent). Step2 (if any) will be animated afterwards.
+        Move reverse1 = new Move(step1.getMove().getTo(), step1.getMove().getFrom());
+        if (step1.isCastling()) {
+            Move rookReverse1 = new Move(step1.getRookTo(), step1.getRookFrom());
+            chessBoard.animateMovesSimultaneously(reverse1, rookReverse1, afterAnimStep1);
         } else {
-            chessBoard.animateMove(reverse, afterAnim);
+            chessBoard.animateMove(reverse1, afterAnimStep1);
         }
     }
 
@@ -149,33 +212,30 @@ public class GameController {
         if (isAnimating || game == null || gameView == null) {
             return;
         }
+
+        // In Player vs AI mode, redo should apply two plies (player move + AI response).
+        int gameMode = RulesEngine.getGameModeNumber(isTwoPlayerMode, isAIVsAIMode);
+        int stepsToRedo = (gameMode == 2) ? 2 : 1;
+
         if (game.isGameOver()) {
             updateHistoryNavigationButtons();
             return;
         }
 
-        Step step = game.getStepHistory() != null ? game.getStepHistory().popForRedo() : null;
-        if (step == null) {
+    chess.history.StepHistory history = game.getStepHistory();
+        Step step1 = history != null ? history.popForRedo() : null;
+        if (step1 == null) {
             updateHistoryNavigationButtons();
             return;
         }
+
+        final Step step2 = (stepsToRedo == 2 && history != null) ? history.popForRedo() : null;
 
         isAnimating = true;
         chessBoard.clearHighlights();
         selectedPosition = null;
 
-        Move forward = step.getMove();
-
-        Runnable afterAnim = () -> {
-            applyRedo(step);
-
-            gameView.addMoveToHistoryWithColor(step.getDisplayText(), step.getMoverColor());
-            if (step.getCapturedPiece() != null) {
-
-                gameView.addCapturedPiece(step.getCapturedPiece().toUnicode(),
-                        step.getCapturedPiece().getColor() == PieceColor.WHITE);
-            }
-
+    Runnable finishRedoAll = () -> {
             updateBoardState();
             gameView.updateUIFromController();
             gameView.updateTimers();
@@ -186,11 +246,52 @@ public class GameController {
             isAnimating = false;
         };
 
-        if (step.isCastling()) {
-            Move rookForward = new Move(step.getRookFrom(), step.getRookTo());
-            chessBoard.animateMovesSimultaneously(forward, rookForward, afterAnim);
+        Runnable applyRedoStep2 = () -> {
+            applyRedo(step2);
+            gameView.addMoveToHistoryWithColor(step2.getDisplayText(), step2.getMoverColor());
+            if (step2.getCapturedPiece() != null) {
+                gameView.addCapturedPiece(step2.getCapturedPiece().toUnicode(), step2.getCapturedPiece().getColor() == PieceColor.WHITE);
+            }
+            // Refresh only affected squares to avoid flicker.
+            chessBoard.updateSquaresForStep(step2);
+            gameView.updateUIFromController();
+            gameView.updateTimers();
+            finishRedoAll.run();
+        };
+
+        Runnable afterAnimStep1 = () -> {
+            applyRedo(step1);
+            gameView.addMoveToHistoryWithColor(step1.getDisplayText(), step1.getMoverColor());
+            if (step1.getCapturedPiece() != null) {
+                gameView.addCapturedPiece(step1.getCapturedPiece().toUnicode(), step1.getCapturedPiece().getColor() == PieceColor.WHITE);
+            }
+
+            // Refresh only affected squares before starting the second animation to reduce jumps.
+            chessBoard.updateSquaresForStep(step1);
+            gameView.updateUIFromController();
+            gameView.updateTimers();
+
+            if (step2 != null) {
+                Move forward2 = step2.getMove();
+                if (step2.isCastling()) {
+                    Move rookForward2 = new Move(step2.getRookFrom(), step2.getRookTo());
+                    chessBoard.animateMovesSimultaneously(forward2, rookForward2, applyRedoStep2);
+                } else {
+                    chessBoard.animateMove(forward2, applyRedoStep2);
+                }
+                return;
+            }
+
+            finishRedoAll.run();
+        };
+
+        // Animate step1 (first redo). Step2 (if any) will be animated afterwards.
+        Move forward1 = step1.getMove();
+        if (step1.isCastling()) {
+            Move rookForward1 = new Move(step1.getRookFrom(), step1.getRookTo());
+            chessBoard.animateMovesSimultaneously(forward1, rookForward1, afterAnimStep1);
         } else {
-            chessBoard.animateMove(forward, afterAnim);
+            chessBoard.animateMove(forward1, afterAnimStep1);
         }
     }
 

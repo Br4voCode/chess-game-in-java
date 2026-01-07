@@ -7,6 +7,7 @@ import chess.model.Board;
 import chess.model.Move;
 import chess.model.Piece;
 import chess.model.PieceColor;
+import chess.view.GameView;
 
 /**
  * Centralized, minimal rules layer.
@@ -22,6 +23,34 @@ public final class RulesEngine {
 
     public static List<Move> legalMoves(Board board, PieceColor color) {
         return board.getAllPossibleMoves(color);
+    }
+
+    /**
+     * Convenience wrapper to map UI mode flags to a compact numeric game-mode code.
+     *
+     * <p>
+     * This method does not inspect the {@link Game} instance. It only maps the two boolean flags
+     * that the UI uses when creating a new game.
+     *
+     * <h3>Return value</h3>
+     * Returns an {@code int} in the range {@code [1..3]}:
+     * <ul>
+     *   <li>{@code 1} = Player vs Player (PVP)</li>
+     *   <li>{@code 2} = Player vs AI (PVAI)</li>
+     *   <li>{@code 3} = AI vs AI (AIVAI)</li>
+     * </ul>
+     *
+     * <h3>Parameters</h3>
+     * <ul>
+     *   <li>{@code isPlayerVsPlayer}: {@code true} when the game should run in PVP mode.</li>
+     *   <li>{@code isAIVsAI}: {@code true} when the game should run in AI-vs-AI mode.</li>
+     * </ul>
+     *
+     * <p>
+     * Note: if {@code isAIVsAI} is {@code true}, it takes precedence and the result is {@code 3}.
+     */
+    public static int getGameModeNumber(boolean isPlayerVsPlayer, boolean isAIVsAI) {
+        return GameView.getGameModeNumber(isPlayerVsPlayer, isAIVsAI);
     }
 
     /**
