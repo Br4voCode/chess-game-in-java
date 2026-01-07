@@ -33,15 +33,15 @@ import javafx.util.Duration;
 public class GameController {
     // --- NUEVO: Verificación periódica de tiempo agotado ---
     private javafx.animation.Timeline timeoutChecker;
-    // Eliminar cualquier bandera de control de EndScreen para timeout (no se necesita)
+    // Eliminar cualquier bandera de control de EndScreen para timeout (no se
+    // necesita)
 
     private void startTimeoutChecker() {
         if (timeoutChecker != null) {
             timeoutChecker.stop();
         }
         timeoutChecker = new javafx.animation.Timeline(
-            new javafx.animation.KeyFrame(javafx.util.Duration.millis(200), e -> checkTimeoutAndShowEndScreen())
-        );
+                new javafx.animation.KeyFrame(javafx.util.Duration.millis(200), e -> checkTimeoutAndShowEndScreen()));
         timeoutChecker.setCycleCount(javafx.animation.Animation.INDEFINITE);
         timeoutChecker.play();
     }
@@ -57,12 +57,13 @@ public class GameController {
             game.stopClock();
             statusBar.setStatus(game.getTurn() + " ran out of time! Game Over.");
             showEndScreenIfNeeded(new chess.rules.MoveResult(
-                false, null, game.getTurn(), null, false, false, false, false, false, true,
-                game.getTurn() + " ran out of time! Game Over."));
+                    false, null, game.getTurn(), null, false, false, false, false, false, true,
+                    game.getTurn() + " ran out of time! Game Over."));
             isHistoryNavigationLocked = true;
             updateHistoryNavigationButtons();
         }
     }
+
     private Game game;
     private ChessBoard chessBoard;
     private StatusBar statusBar;
@@ -84,19 +85,19 @@ public class GameController {
 
     public GameController(Game game, ChessBoard chessBoard, StatusBar statusBar, boolean isTwoPlayerMode,
             boolean isAIVsAIMode) {
-    this.game = game;
-    this.chessBoard = chessBoard;
-    this.statusBar = statusBar;
-    this.gameView = null;
-    this.selectedPosition = null;
-    this.isTwoPlayerMode = isTwoPlayerMode;
-    this.isAIVsAIMode = isAIVsAIMode;
-    // Reiniciar el checker de timeout siempre que se inicializa el tablero
-    startTimeoutChecker();
+        this.game = game;
+        this.chessBoard = chessBoard;
+        this.statusBar = statusBar;
+        this.gameView = null;
+        this.selectedPosition = null;
+        this.isTwoPlayerMode = isTwoPlayerMode;
+        this.isAIVsAIMode = isAIVsAIMode;
+        // Reiniciar el checker de timeout siempre que se inicializa el tablero
+        startTimeoutChecker();
 
-    chessBoard.setCurrentBoard(game.getBoard());
-    game.startClock();
-    updateUI();
+        chessBoard.setCurrentBoard(game.getBoard());
+        game.startClock();
+        updateUI();
     }
 
     public void setGameView(chess.view.GameView gameView) {
@@ -164,7 +165,7 @@ public class GameController {
             return;
         }
 
-    chess.history.StepHistory history = game.getStepHistory();
+        chess.history.StepHistory history = game.getStepHistory();
         Step step1 = history != null ? history.popForUndo() : null;
         if (step1 == null) {
             updateHistoryNavigationButtons();
@@ -177,7 +178,7 @@ public class GameController {
         chessBoard.clearHighlights();
         selectedPosition = null;
 
-    Runnable finishUndoAll = () -> {
+        Runnable finishUndoAll = () -> {
             updateBoardState();
             gameView.updateUIFromController();
             gameView.updateTimers();
@@ -212,7 +213,8 @@ public class GameController {
                 gameView.removeLastCapturedPiece(step1.getCapturedPiece().getColor());
             }
 
-            // Refresh only affected squares before starting the second animation to reduce jumps.
+            // Refresh only affected squares before starting the second animation to reduce
+            // jumps.
             chessBoard.updateSquaresForStep(step1);
             gameView.updateUIFromController();
             gameView.updateTimers();
@@ -250,7 +252,8 @@ public class GameController {
             return;
         }
 
-        // In Player vs AI mode, redo should apply two plies (player move + AI response).
+        // In Player vs AI mode, redo should apply two plies (player move + AI
+        // response).
         int gameMode = RulesEngine.getGameModeNumber(isTwoPlayerMode, isAIVsAIMode);
         int stepsToRedo = (gameMode == 2) ? 2 : 1;
 
@@ -259,7 +262,7 @@ public class GameController {
             return;
         }
 
-    chess.history.StepHistory history = game.getStepHistory();
+        chess.history.StepHistory history = game.getStepHistory();
         Step step1 = history != null ? history.popForRedo() : null;
         if (step1 == null) {
             updateHistoryNavigationButtons();
@@ -272,7 +275,7 @@ public class GameController {
         chessBoard.clearHighlights();
         selectedPosition = null;
 
-    Runnable finishRedoAll = () -> {
+        Runnable finishRedoAll = () -> {
             updateBoardState();
             gameView.updateUIFromController();
             gameView.updateTimers();
@@ -287,7 +290,8 @@ public class GameController {
             applyRedo(step2);
             gameView.addMoveToHistoryWithColor(step2.getDisplayText(), step2.getMoverColor());
             if (step2.getCapturedPiece() != null) {
-                gameView.addCapturedPiece(step2.getCapturedPiece().toUnicode(), step2.getCapturedPiece().getColor() == PieceColor.WHITE);
+                gameView.addCapturedPiece(step2.getCapturedPiece().toUnicode(),
+                        step2.getCapturedPiece().getColor() == PieceColor.WHITE);
             }
             // Refresh only affected squares to avoid flicker.
             chessBoard.updateSquaresForStep(step2);
@@ -300,10 +304,12 @@ public class GameController {
             applyRedo(step1);
             gameView.addMoveToHistoryWithColor(step1.getDisplayText(), step1.getMoverColor());
             if (step1.getCapturedPiece() != null) {
-                gameView.addCapturedPiece(step1.getCapturedPiece().toUnicode(), step1.getCapturedPiece().getColor() == PieceColor.WHITE);
+                gameView.addCapturedPiece(step1.getCapturedPiece().toUnicode(),
+                        step1.getCapturedPiece().getColor() == PieceColor.WHITE);
             }
 
-            // Refresh only affected squares before starting the second animation to reduce jumps.
+            // Refresh only affected squares before starting the second animation to reduce
+            // jumps.
             chessBoard.updateSquaresForStep(step1);
             gameView.updateUIFromController();
             gameView.updateTimers();
@@ -402,6 +408,13 @@ public class GameController {
         board.setPieceAt(move.getTo(), mover);
         board.setPieceAt(move.getFrom(), null);
 
+        // --- NUEVO: Actualizar hasMoved al redescubrir el paso (redo) ---
+        if (mover instanceof King) {
+            ((King) mover).setHasMoved(true);
+        } else if (mover instanceof Rook) {
+            ((Rook) mover).setHasMoved(true);
+        }
+
         if (step.isPromotion() && step.getPromotedTo() != null) {
             board.setPieceAt(move.getTo(), step.getPromotedTo());
         }
@@ -410,6 +423,9 @@ public class GameController {
             Piece rook = board.getPieceAt(step.getRookFrom());
             board.setPieceAt(step.getRookTo(), rook);
             board.setPieceAt(step.getRookFrom(), null);
+            if (rook instanceof Rook) {
+                ((Rook) rook).setHasMoved(true);
+            }
         }
 
         game.setMoveCount(game.getMoveCount() + 1);
@@ -552,10 +568,11 @@ public class GameController {
 
     public void executeMoveWithAnimation(Move move) {
         if (game.isGameOver()) {
-            // Si el juego terminó (por tiempo u otra razón), no permitir más animaciones ni movimientos
+            // Si el juego terminó (por tiempo u otra razón), no permitir más animaciones ni
+            // movimientos
             showEndScreenIfNeeded(new chess.rules.MoveResult(
-                false, move, game.getTurn(), null, false, false, false, false, false, true,
-                game.getTurn() + " ran out of time! Game Over."));
+                    false, move, game.getTurn(), null, false, false, false, false, false, true,
+                    game.getTurn() + " ran out of time! Game Over."));
             return;
         }
         isAnimating = true;
@@ -576,12 +593,13 @@ public class GameController {
         PauseTransition initialPause = new PauseTransition(Duration.millis(50));
         initialPause.setOnFinished(e -> {
             if (game.isGameOver()) {
-                // Si el juego terminó durante la animación, restaurar el tablero y mostrar EndScreen
+                // Si el juego terminó durante la animación, restaurar el tablero y mostrar
+                // EndScreen
                 updateBoardState(); // restaura visualmente el tablero
                 isAnimating = false;
                 showEndScreenIfNeeded(new chess.rules.MoveResult(
-                    false, move, game.getTurn(), null, false, false, false, false, false, true,
-                    game.getTurn() + " ran out of time! Game Over."));
+                        false, move, game.getTurn(), null, false, false, false, false, false, true,
+                        game.getTurn() + " ran out of time! Game Over."));
                 return;
             }
             boolean isCastling = isCastlingMove(move, movedPiece);
@@ -592,8 +610,8 @@ public class GameController {
                         updateBoardState();
                         isAnimating = false;
                         showEndScreenIfNeeded(new chess.rules.MoveResult(
-                            false, move, game.getTurn(), null, false, false, false, false, false, true,
-                            game.getTurn() + " ran out of time! Game Over."));
+                                false, move, game.getTurn(), null, false, false, false, false, false, true,
+                                game.getTurn() + " ran out of time! Game Over."));
                         return;
                     }
                     MoveResult result = RulesEngine.applyMove(game, move);
@@ -638,12 +656,13 @@ public class GameController {
                         }
 
                         if (game.getGameClock().hasTimeExpired(game.getTurn())) {
-                            // Si se acabó el tiempo después del movimiento, congelar UI y mostrar pantalla de fin
+                            // Si se acabó el tiempo después del movimiento, congelar UI y mostrar pantalla
+                            // de fin
                             game.stopClock();
                             statusBar.setStatus(game.getTurn() + " ran out of time! Game Over.");
                             showEndScreenIfNeeded(new chess.rules.MoveResult(
-                                false, move, game.getTurn(), null, false, false, false, false, false, true,
-                                game.getTurn() + " ran out of time! Game Over."));
+                                    false, move, game.getTurn(), null, false, false, false, false, false, true,
+                                    game.getTurn() + " ran out of time! Game Over."));
                             isHistoryNavigationLocked = true;
                             updateHistoryNavigationButtons();
                             isAnimating = false;
@@ -664,8 +683,8 @@ public class GameController {
                         updateBoardState();
                         isAnimating = false;
                         showEndScreenIfNeeded(new chess.rules.MoveResult(
-                            false, move, game.getTurn(), null, false, false, false, false, false, true,
-                            game.getTurn() + " ran out of time! Game Over."));
+                                false, move, game.getTurn(), null, false, false, false, false, false, true,
+                                game.getTurn() + " ran out of time! Game Over."));
                         return;
                     }
                     MoveResult result = RulesEngine.applyMove(game, move);
@@ -727,12 +746,13 @@ public class GameController {
                         }
 
                         if (game.getGameClock().hasTimeExpired(game.getTurn())) {
-                            // Si se acabó el tiempo después del movimiento, congelar UI y mostrar pantalla de fin
+                            // Si se acabó el tiempo después del movimiento, congelar UI y mostrar pantalla
+                            // de fin
                             game.stopClock();
                             statusBar.setStatus(game.getTurn() + " ran out of time! Game Over.");
                             showEndScreenIfNeeded(new chess.rules.MoveResult(
-                                false, move, game.getTurn(), null, false, false, false, false, false, true,
-                                game.getTurn() + " ran out of time! Game Over."));
+                                    false, move, game.getTurn(), null, false, false, false, false, false, true,
+                                    game.getTurn() + " ran out of time! Game Over."));
                             isHistoryNavigationLocked = true;
                             updateHistoryNavigationButtons();
                             isAnimating = false;
@@ -746,7 +766,7 @@ public class GameController {
                     }
 
                     chessBoard.highlightMove(move);
-                    
+
                     // Apply check highlighting AFTER move highlight so it's not overwritten
                     if (moveSuccessful && isCheckMove) {
                         Position kingPos = findKingPosition(game.getTurn());
@@ -754,7 +774,7 @@ public class GameController {
                             chessBoard.highlightKingInCheck(kingPos);
                         }
                     }
-                    
+
                     isAnimating = false;
                 });
             }
@@ -772,7 +792,8 @@ public class GameController {
         if (gameView == null || gameView.getRoot() == null || gameView.getRoot().getScene() == null) {
             return;
         }
-        // Siempre detener el checker al mostrar EndScreen, pero se reiniciará al reiniciar el tablero
+        // Siempre detener el checker al mostrar EndScreen, pero se reiniciará al
+        // reiniciar el tablero
         stopTimeoutChecker(); // Detener verificación periódica al mostrar EndScreen
 
         PieceColor winnerColor = result.getNextTurn().opposite();
@@ -794,13 +815,16 @@ public class GameController {
 
             if (isPvP || isAIVsAI) {
                 // En PvP y AIvAI, mostrar WIN para el ganador, LOSE para el perdedor
-                // Suponiendo que la pantalla se muestra para ambos, aquí WIN si el jugador local es el ganador
-                // Para simplificar, WIN si winner es WHITE, LOSE si es BLACK (ajusta si tu UI es diferente)
+                // Suponiendo que la pantalla se muestra para ambos, aquí WIN si el jugador
+                // local es el ganador
+                // Para simplificar, WIN si winner es WHITE, LOSE si es BLACK (ajusta si tu UI
+                // es diferente)
                 screenResult = (winner == PieceColor.WHITE) ? GameEndScreen.Result.WIN : GameEndScreen.Result.LOSE;
             } else { // PvAI
                 // Si el humano perdió por tiempo, LOSE; si la IA perdió por tiempo, WIN
                 boolean humanIsWhite = !(game.getWhitePlayer() instanceof AIPlayer);
-                boolean humanLost = (loser == PieceColor.WHITE && humanIsWhite) || (loser == PieceColor.BLACK && !humanIsWhite);
+                boolean humanLost = (loser == PieceColor.WHITE && humanIsWhite)
+                        || (loser == PieceColor.BLACK && !humanIsWhite);
                 screenResult = humanLost ? GameEndScreen.Result.LOSE : GameEndScreen.Result.WIN;
             }
         } else if (result.isStalemate() || result.isInsufficientMaterial() || result.isThreefoldRepetition()) {
@@ -891,7 +915,8 @@ public class GameController {
     }
 
     /**
-     * Allows the view to request an AI move when it's the AI's turn (e.g., when the human plays with black).
+     * Allows the view to request an AI move when it's the AI's turn (e.g., when the
+     * human plays with black).
      */
     public void triggerAIMoveIfNeeded() {
         handleAITurn();
@@ -928,7 +953,7 @@ public class GameController {
 
     private void updateUI() {
         updateBoardState();
-        
+
         // Check if current player's King is in check
         MoveResult result = RulesEngine.currentGameState(game);
         if (result.isCheck()) {
@@ -940,7 +965,7 @@ public class GameController {
         } else {
             statusBar.setStatus(game.getTurn() + " to move. Select a piece.");
         }
-        
+
         if (gameView != null) {
             gameView.updateUIFromController();
         }
