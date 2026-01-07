@@ -1,5 +1,9 @@
 package chess.view;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedList;
+
 import chess.game.GameSettings;
 import javafx.beans.binding.Bindings;
 import javafx.concurrent.Task;
@@ -8,8 +12,10 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.TextArea;
 import javafx.scene.effect.GaussianBlur;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -23,11 +29,18 @@ public class LoadingScreen {
     private final Label statusLabel;
     private final Label percentageLabel;
     private final Label depthLabel;
+    private final TextArea logsArea;
     private final ProgressBar progressBar;
     private final Button cancelButton;
+    private final LinkedList<String> logBuffer;
+    private final DateTimeFormatter timeFormatter;
+    private static final int MAX_LOGS = 5000;
     private Task<?> boundTask;
 
     public LoadingScreen(String headline, GameSettings settings, Runnable onCancel) {
+        logBuffer = new LinkedList<>();
+        timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+        
         root = new StackPane();
         root.setPadding(new Insets(60));
         root.setStyle("-fx-background-color: linear-gradient(to bottom right, #050505, #121317, #0d1b2a);");
@@ -45,9 +58,9 @@ public class LoadingScreen {
         neonAccent.setMouseTransparent(true);
 
         VBox card = new VBox(24);
-        card.setAlignment(Pos.CENTER);
+        card.setAlignment(Pos.TOP_CENTER);
         card.setPadding(new Insets(40, 70, 40, 70));
-        card.setMaxWidth(520);
+        card.setMaxWidth(700);
         card.setStyle(
                 "-fx-background-color: rgba(10, 12, 18, 0.9);" +
                         "-fx-background-radius: 32;" +
@@ -68,6 +81,23 @@ public class LoadingScreen {
 
         statusLabel = new Label("Iniciando...");
         statusLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.78); -fx-font-size: 15px;");
+
+        // Crear área de logs en lugar de un label simple
+        logsArea = new TextArea();
+        logsArea.setPrefHeight(180);
+        logsArea.setPrefWidth(560);
+        logsArea.setWrapText(true);
+        logsArea.setEditable(false);
+        logsArea.setStyle(
+                "-fx-control-inner-background: rgba(20, 25, 35, 0.95);" +
+                        "-fx-text-fill: rgba(76, 175, 80, 0.85);" +
+                        "-fx-font-family: 'JetBrains Mono','Consolas','Monaco',monospace;" +
+                        "-fx-font-size: 11px;" +
+                        "-fx-padding: 8;" +
+                        "-fx-border-radius: 8;" +
+                        "-fx-border-color: rgba(76, 175, 80, 0.2);" +
+                        "-fx-border-width: 1;");
+        logsArea.setText("Inicializando árbol de búsqueda...\n");
 
         progressBar = new ProgressBar(0);
         progressBar.setPrefHeight(10);
@@ -107,7 +137,8 @@ public class LoadingScreen {
             }
         });
 
-        card.getChildren().addAll(headlineLabel, depthLabel, statusLabel, progressRow, tipLabel, cancelButton);
+        card.getChildren().addAll(headlineLabel, depthLabel, statusLabel, logsArea, progressRow, tipLabel, cancelButton);
+        VBox.setVgrow(logsArea, Priority.ALWAYS);
 
         root.getChildren().addAll(neonSoft, neonAccent, card);
     }
@@ -144,6 +175,14 @@ public class LoadingScreen {
         this.boundTask = task;
         progressBar.progressProperty().bind(task.progressProperty());
         statusLabel.textProperty().bind(task.messageProperty());
+        
+        // Bind el título como logs en el área de texto
+        task.titleProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null && !newVal.isBlank()) {
+                addLogBatch(newVal);
+            }
+        });
+        
         percentageLabel.textProperty().bind(Bindings.createStringBinding(() -> {
             double progress = task.getProgress();
             if (progress < 0) {
@@ -153,6 +192,49 @@ public class LoadingScreen {
             return pct + "%";
         }, task.progressProperty()));
     }
+    
+    /**
+     * Agrega un batch de logs (posiblemente multi-línea) con timestamp al área de logs.
+     * Mantiene un buffer de máximo MAX_LOGS líneas para evitar consumo excesivo.
+     */
+    private void addLogBatch(String message) {
+        String[] lines = message.split("\\R");
+        if (lines.length == 0) {
+            return;
+        }
+
+        boolean overflowed = false;
+        for (String line : lines) {
+            if (line == null) {
+                continue;
+            }
+            String trimmed = line.strip();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+
+            String timestamp = LocalTime.now().format(timeFormatter);
+            String logEntry = "[" + timestamp + "] " + trimmed;
+
+            logBuffer.addLast(logEntry);
+            logsArea.appendText(logEntry + "\n");
+
+            while (logBuffer.size() > MAX_LOGS) {
+                logBuffer.removeFirst();
+                overflowed = true;
+            }
+        }
+
+        if (overflowed) {
+            StringBuilder sb = new StringBuilder();
+            for (String log : logBuffer) {
+                sb.append(log).append("\n");
+            }
+            logsArea.setText(sb.toString());
+        }
+
+        logsArea.positionCaret(logsArea.getLength());
+    }
 
     public void showError(String message, Runnable onReturn) {
         if (boundTask != null) {
@@ -160,6 +242,7 @@ public class LoadingScreen {
         }
         statusLabel.textProperty().unbind();
         percentageLabel.textProperty().unbind();
+        addLogBatch("❌ ERROR: " + (message != null ? message : "No se pudo inicializar la partida"));
         progressBar.setProgress(0);
         percentageLabel.setText("0%");
         statusLabel.setText(message != null ? message : "No se pudo inicializar la partida");

@@ -52,6 +52,7 @@ public class GameView {
     // Navigation buttons
     private Button undoButton;
     private Button redoButton;
+    private LogConsole logConsole;
     private Runnable onBackToMenu;
 
     public GameView() {
@@ -101,14 +102,14 @@ public class GameView {
         if (settings == null) {
             return GameSettings.DEFAULT_DEPTH;
         }
-        return settings.getAiDepth();
+        return settings.getEngineDepth();
     }
 
     private GameView(boolean loadFromHistory, boolean isPlayerVsPlayer, boolean isAIVsAI,
             PieceColor humanColor, int aiDepth) {
         this.shouldLoadHistory = loadFromHistory;
         this.humanPlayerColor = humanColor != null ? humanColor : PieceColor.WHITE;
-        this.aiSearchDepth = Math.max(1, Math.min(8, aiDepth));
+        this.aiSearchDepth = Math.max(GameSettings.MIN_DEPTH, Math.min(GameSettings.MAX_DEPTH, aiDepth));
         this.isPlayerVsPlayerMode = isPlayerVsPlayer;
         this.isAIVsAIMode = isAIVsAI;
         this.shouldStartAIVsAI = false;
@@ -163,7 +164,7 @@ public class GameView {
             PieceColor humanColor, int aiDepth) {
         Game game;
         boolean shouldStartAIMatch = false;
-        int depth = Math.max(1, Math.min(8, aiDepth));
+        int depth = Math.max(GameSettings.MIN_DEPTH, Math.min(GameSettings.MAX_DEPTH, aiDepth));
 
         if (loadFromHistory && StartScreen.hasGameHistory()) {
             chess.history.GameMetadata.GameMode savedMode = chess.game.GameReconstructor.getGameMode(StartScreen.getHistoryFilePath());
@@ -335,6 +336,17 @@ public class GameView {
         turnValue = new Label(gameInstance.getTurn() == PieceColor.WHITE ? "White" : "Black");
         turnValue.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
 
+        // Create log console
+        logConsole = new LogConsole();
+        Label logsTitle = new Label("Logs:");
+        logsTitle.setStyle("-fx-text-fill: #bbbbbb;");
+        
+        VBox logsContainer = new VBox(5);
+        logsContainer.setStyle("-fx-background-color: #2b2b2b;");
+        logsContainer.getChildren().add(logConsole.getLogsArea());
+        VBox.setVgrow(logConsole.getLogsArea(), Priority.ALWAYS);
+        VBox.setVgrow(logsContainer, Priority.ALWAYS);
+
         Label gameStateLabel = new Label("Game state:");
         gameStateLabel.setStyle("-fx-text-fill: #bbbbbb;");
 
@@ -356,6 +368,7 @@ public class GameView {
                 hintButton,
                 new Pane(),
                 turnLabel, turnValue,
+                logsTitle, logsContainer,
                 spacer,
                 gameStateLabel, gameStateValue,
                 backToMenuButton);
@@ -406,7 +419,7 @@ public class GameView {
 
         movesBox = new VBox(3);
         movesBox.setStyle("-fx-background-color: #2b2b2b; -fx-padding: 10; -fx-background-radius: 3;");
-        movesBox.setPrefHeight(150);
+        movesBox.setPrefHeight(100);
         VBox.setVgrow(movesBox, Priority.ALWAYS);
 
         panel.getChildren().addAll(
@@ -475,6 +488,13 @@ public class GameView {
 
     public BorderPane getRoot() {
         return root;
+    }
+
+    /**
+     * Get the log console for external logging
+     */
+    public LogConsole getLogConsole() {
+        return logConsole;
     }
 
     /**

@@ -1,11 +1,12 @@
 package chess.ai;
 
-import chess.model.Board;
-import chess.model.PieceColor;
-import chess.model.Move;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import chess.model.Board;
+import chess.model.Move;
+import chess.model.PieceColor;
+import chess.util.GameLogger;
 
 /**
  * Minimax executed over an explicit GameTree.
@@ -30,8 +31,15 @@ public class MinimaxTreeSearch {
      * Run minimax and return best Move from root.
      */
     public Move runAndGetBestMove() {
+        GameLogger logger = GameLogger.getInstance();
+        long startTime = System.currentTimeMillis();
+        
         GameTreeNode root = tree.getRoot();
+        logger.log("  → Propagando evaluaciones minimax...");
         propagate(root);
+        
+        long evalTime = System.currentTimeMillis() - startTime;
+        logger.log("  → Evaluación completada en " + evalTime + "ms");
 
         List<GameTreeNode> bestNodes = new ArrayList<>();
         int best = Integer.MIN_VALUE;
@@ -47,7 +55,13 @@ public class MinimaxTreeSearch {
                 bestNodes.add(child);
             }
         }
-        return bestNodes.isEmpty() ? null : bestNodes.get((int) (Math.random() * bestNodes.size())).getMoveFromParent();
+        
+        Move selectedMove = bestNodes.isEmpty() ? null : bestNodes.get((int) (Math.random() * bestNodes.size())).getMoveFromParent();
+        if (selectedMove != null) {
+            logger.log("  → Movimiento mejor evaluado: " + selectedMove + " (score: " + best + ")");
+        }
+        
+        return selectedMove;
     }
 
     private int propagate(GameTreeNode node) {

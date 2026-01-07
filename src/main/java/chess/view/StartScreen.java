@@ -34,7 +34,7 @@ public class StartScreen {
     private Runnable onNewAIVsAIGame;
     private static final String HISTORY_FILE = "game_history.dat";
     private PieceColor selectedPlayerColor = PieceColor.WHITE;
-    private int selectedDifficulty = 3;
+    private int selectedDifficulty = GameSettings.DEFAULT_DEPTH;
     private GameSettings lastSettings;
 
     public StartScreen(BiConsumer<PieceColor, Integer> onNewGame, Runnable onLoadGame, Runnable onNewTwoPlayerGame) {
@@ -208,10 +208,12 @@ public class StartScreen {
         Label difficultyLabel = new Label("Dificultad del AI");
         difficultyLabel.setStyle("-fx-text-fill: #bdbdbd; -fx-font-size: 14px;");
 
+        selectedDifficulty = clampDifficulty(selectedDifficulty);
+
         Label difficultyValueLabel = new Label(formatDifficultyLabel(selectedDifficulty));
         difficultyValueLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;");
 
-        Slider difficultySlider = new Slider(1, 8, selectedDifficulty);
+        Slider difficultySlider = new Slider(GameSettings.MIN_DEPTH, GameSettings.MAX_DEPTH, selectedDifficulty);
         difficultySlider.setMajorTickUnit(1);
         difficultySlider.setMinorTickCount(0);
         difficultySlider.setShowTickMarks(true);
@@ -223,7 +225,7 @@ public class StartScreen {
             difficultyValueLabel.setText(formatDifficultyLabel(selectedDifficulty));
         });
 
-        Label difficultyHint = new Label("Controla la profundidad del árbol de Minimax (1 = rápido, 8 = maestro).");
+        Label difficultyHint = new Label("Controla la profundidad del árbol de Minimax (1 = rápido, 4 = maestro).");
         difficultyHint.setStyle("-fx-text-fill: #8f8f8f; -fx-font-size: 12px; -fx-wrap-text: true;");
 
         card.getChildren().addAll(
@@ -294,8 +296,12 @@ public class StartScreen {
         lastSettings = GameSettingsStore.load();
         if (lastSettings != null && lastSettings.isHumanVsAI()) {
             selectedPlayerColor = lastSettings.getHumanColor();
-            selectedDifficulty = lastSettings.getAiDepth();
+            selectedDifficulty = clampDifficulty(lastSettings.getAiDepth());
         }
+    }
+
+    private int clampDifficulty(int depth) {
+        return Math.max(GameSettings.MIN_DEPTH, Math.min(GameSettings.MAX_DEPTH, depth));
     }
 
     public BorderPane getRoot() {
