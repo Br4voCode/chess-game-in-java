@@ -4,10 +4,7 @@ import chess.model.Move;
 import chess.model.PieceColor;
 import javafx.application.Platform;
 
-/**
- * Gestiona un duelo automático entre dos IAs.
- * Los movimientos se ejecutan sin intervención del usuario.
- */
+
 public class AIMatch {
     private Game game;
     private AIPlayer whiteAI;
@@ -20,9 +17,6 @@ public class AIMatch {
     private int moveCount = 0;
     private int maxMoves = 200;
 
-    /**
-     * 用于以视觉方式执行移动的回调接口
-     */
     public interface MoveCallback {
         void executeMove(Move move);
     }
@@ -33,9 +27,7 @@ public class AIMatch {
         this.blackAI = blackAI;
     }
 
-    /**
-     * 启动人工智能之间的自动比赛
-     */
+
     public void startMatch() {
         if (isRunning) {
             return;
@@ -46,9 +38,7 @@ public class AIMatch {
         executeNextMove();
     }
 
-    /**
-     * 执行相应人工智能的下一步移动
-     */
+
     private void executeNextMove() {
         if (!isRunning || isPaused || game.isGameOver()) {
             if (game.isGameOver() && onGameOver != null) {
@@ -59,7 +49,7 @@ public class AIMatch {
         }
 
         if (moveCount >= maxMoves) {
-            game.setGameOver(true, "تعادل - تم الوصول للحد الأقصى من الحركات");
+            game.setGameOver(true, "Empate - Se ha alcanzado el número máximo de movimientos");
             if (onGameOver != null) {
                 onGameOver.run();
             }
@@ -115,9 +105,7 @@ public class AIMatch {
         }
     }
 
-    /**
-     * 在延迟后安排执行下一步移动
-     */
+
     private void scheduleNextMove() {
         new Thread(() -> {
             try {
@@ -131,16 +119,12 @@ public class AIMatch {
         }).start();
     }
 
-    /**
-     * 暂停比赛
-     */
+
     public void pauseMatch() {
         isPaused = true;
     }
 
-    /**
-     * استئناف المباراة
-     */
+
     public void resumeMatch() {
         if (isRunning) {
             isPaused = false;
@@ -148,66 +132,46 @@ public class AIMatch {
         }
     }
 
-    /**
-     * إيقاف المباراة نهائياً
-     */
+
     public void stopMatch() {
         isRunning = false;
         isPaused = false;
     }
 
-    /**
-     * Asigna el callback que se ejecuta cuando termina la partida
-     */
+
     public void setOnGameOver(Runnable onGameOver) {
         this.onGameOver = onGameOver;
     }
 
-    /**
-     * Asigna el callback que se ejecuta después de cada movimiento
-     */
+
     public void setOnMoveExecuted(MoveCallback onMoveExecuted) {
         this.onMoveExecuted = onMoveExecuted;
     }
 
-    /**
-     * Asigna el retraso entre movimientos (en milisegundos)
-     */
+
     public void setDelayBetweenMoves(long delayMs) {
         this.delayBetweenMoves = Math.max(100, delayMs);
     }
 
-    /**
-     * الحصول على التأخير بين الحركات
-     */
+
     public long getDelayBetweenMoves() {
         return delayBetweenMoves;
     }
 
-    /**
-     * التحقق من ما إذا كانت المباراة قيد التشغيل
-     */
+
     public boolean isRunning() {
         return isRunning;
     }
 
-    /**
-     * التحقق من ما إذا كانت المباراة موقوفة مؤقتاً
-     */
     public boolean isPaused() {
         return isPaused;
     }
 
-    /**
-     * الحصول على عدد الحركات المنفذة
-     */
+
     public int getMoveCount() {
         return moveCount;
     }
 
-    /**
-     * Asigna el máximo número de movimientos permitidos
-     */
     public void setMaxMoves(int maxMoves) {
         this.maxMoves = maxMoves;
     }

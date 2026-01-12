@@ -51,9 +51,7 @@ public class GameView {
     private PieceColor humanPlayerColor = PieceColor.WHITE;
     private int aiSearchDepth = 3;
 
-    // Persist mode flags so other components can ask the view which mode is running.
-    // CRITICAL (comentario hecho por Isaac): esto debe refactorizarse a un único atributo (por ejemplo, un enum/int gameMode)
-    // en lugar de dos booleanos, para evitar combinaciones inválidas y hacer el código más mantenible.
+    // Banderas de modo para indicar cuál modo de juego se está ejecutando
     private boolean isPlayerVsPlayerMode;
     private boolean isAIVsAIMode;
 
@@ -746,15 +744,15 @@ public class GameView {
      */
     public void handleBackToMenu() {
         if (gameInstance != null) {
-            // Stop the game clock
+            // Detiene el reloj del juego
             gameInstance.stopClock();
             
-            // Stop AI vs AI match if running
+            // Detiene el duelo IA vs IA si está en ejecución
             stopAIVsAIMatch();
             
-            // Save the current game state
+            // Guarda el estado actual del juego
             if (gameInstance.getStepHistory() != null && gameInstance.getStepHistoryStore() != null) {
-                // Update metadata with current timer state before saving
+                // Actualiza metadatos con el estado del reloj antes de guardar
                 if (gameInstance.getStepHistoryStore().getGameMetadata() != null) {
                     chess.history.GameMetadata.GameMode mode = gameInstance.getStepHistoryStore().getGameMetadata().getGameMode();
                     long whiteTime = gameInstance.getGameClock().getWhiteTimeRemainingMillis();
@@ -765,7 +763,7 @@ public class GameView {
             }
         }
         
-        // Call the back to menu callback if set
+        // Ejecuta el callback de volver al menú si está configurado
         if (onBackToMenu != null) {
             onBackToMenu.run();
         }

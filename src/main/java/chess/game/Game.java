@@ -35,7 +35,7 @@ public class Game {
         this.moveCount = 0;
         this.stepHistory = new StepHistory();
         this.stepHistoryStore = new StepHistoryStore("game_history.dat");
-        
+        // 5 minutos para cada jugador
         this.gameClock = new GameClock(5 * 60);
     }
 
@@ -107,7 +107,7 @@ public class Game {
         chess.model.Position enPassantBefore = board.getEnPassantTarget();
         Piece moverBefore = board.getPieceAt(m.getFrom());
 
-        
+        // --- NUEVO: Capturar estado 'hasMoved' ANTES de mover ---
         Boolean moverHadMovedBefore = null;
         if (moverBefore instanceof chess.model.pieces.King) {
             moverHadMovedBefore = ((chess.model.pieces.King) moverBefore).hasMovedFromStart();
@@ -144,7 +144,7 @@ public class Game {
                     moverHadMovedBefore, rookHadMovedBefore);
             stepHistory.recordApplied(step);
 
-            
+            // Update metadata with current timer state before saving
             if (stepHistoryStore.getGameMetadata() != null) {
                 chess.history.GameMetadata.GameMode mode = stepHistoryStore.getGameMetadata().getGameMode();
                 long whiteTime = gameClock.getWhiteTimeRemainingMillis();

@@ -170,8 +170,8 @@ public class Board {
     }
 
     /**
-     * Return all **legal** moves for the given color (filters out moves that leave
-     * king in check).
+     * Retorna todos los movimientos **legales** para el color dado (filtra movimientos que dejan
+     * al rey en jaque).
      */
     public List<Move> getAllPossibleMoves(PieceColor color) {
         List<Move> all = new ArrayList<>();
@@ -202,7 +202,7 @@ public class Board {
     }
 
     /**
-     * Return all **legal** moves for a specific piece at a position.
+     * Retorna todos los movimientos **legales** para una pieza específica en una posición.
      */
     public List<Move> getPossibleMovesForPiece(Position position) {
         Piece piece = getPieceAt(position);

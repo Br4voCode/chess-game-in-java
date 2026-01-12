@@ -87,16 +87,16 @@ public class Main extends Application {
 
     private void launchWithLoading(String headline, GameSettings settings, Supplier<GameView> gameFactory) {
         try {
-            // Create game view directly without loading screen
+            // Crea la vista del juego directamente sin pantalla de carga
             currentGameView = gameFactory.get();
                 currentGameView.setOnBackToMenu(this::showStartScreen);
             Task<Void> loadTask = createLoadingTask(settings);
             
-            // Get the log console from the game view and bind it to the task
+            // Obtiene la consola de registro de la vista del juego
             chess.view.LogConsole logConsole = currentGameView.getLogConsole();
             
             loadTask.setOnSucceeded(event -> {
-                // Task completed successfully
+                // Tarea completada exitosamente
                 logConsole.log("✅ " + headline + " completado");
             });
 
@@ -110,11 +110,11 @@ public class Main extends Application {
                 logConsole.log("⚠️ Operación cancelada");
             });
 
-            // Create a custom task that updates log console during execution
+            // Crea una tarea personalizada que actualiza la consola de registro durante la ejecución
             Task<Void> loggingTask = new Task<Void>() {
                 @Override
                 protected Void call() throws Exception {
-                    // Capture the original task's title updates as logs
+                    // Captura las actualizaciones del título de la tarea original como registros
                     loadTask.titleProperty().addListener((obs, oldVal, newVal) -> {
                         if (newVal != null && !newVal.isEmpty()) {
                             logConsole.log(newVal);
@@ -127,7 +127,7 @@ public class Main extends Application {
                         }
                     });
                     
-                    // Run the original task
+                    // Ejecuta la tarea original
                     loadTask.run();
                     return null;
                 }

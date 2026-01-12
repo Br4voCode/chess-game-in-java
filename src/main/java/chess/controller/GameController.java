@@ -28,14 +28,9 @@ import chess.history.Step;
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
-/**
- * Controla la lógica del juego y la interacción entre la interfaz y el modelo.
- */
+
 public class GameController {
-    // --- NUEVO: Verificación periódica de tiempo agotado ---
     private javafx.animation.Timeline timeoutChecker;
-    // Eliminar cualquier bandera de control de EndScreen para timeout (no se
-    // necesita)
 
     private void startTimeoutChecker() {
         if (timeoutChecker != null) {
@@ -93,7 +88,7 @@ public class GameController {
         this.selectedPosition = null;
         this.isTwoPlayerMode = isTwoPlayerMode;
         this.isAIVsAIMode = isAIVsAIMode;
-        // Reiniciar el checker de timeout siempre que se inicializa el tablero
+
         startTimeoutChecker();
 
         chessBoard.setCurrentBoard(game.getBoard());
@@ -104,7 +99,6 @@ public class GameController {
     public void setGameView(chess.view.GameView gameView) {
         this.gameView = gameView;
         updateUI();
-        // Reiniciar verificación de timeout cada vez que se asocia la vista
         startTimeoutChecker();
         if (game != null && !game.isGameOver()) {
             isHistoryNavigationLocked = false;
@@ -118,13 +112,11 @@ public class GameController {
             return;
         }
 
-        // Never allow history navigation during AI vs AI.
         if (isAIVsAIMode) {
             gameView.setHistoryNavigationEnabled(false, false);
             return;
         }
 
-        // In Player vs AI: disable undo/redo while it's the AI's turn.
         if (!isTwoPlayerMode) {
             PieceColor currentTurn = game.getTurn();
             chess.game.Player currentPlayer = (currentTurn == PieceColor.WHITE)
@@ -150,7 +142,6 @@ public class GameController {
             return;
         }
 
-        // Disable hint button in AI vs AI mode or when game is over
         if (isAIVsAIMode || game.isGameOver()) {
             gameView.setHintButtonEnabled(false);
         } else {
@@ -158,20 +149,12 @@ public class GameController {
         }
     }
 
-    /**
-     * Undo navigation requested from UI.
-     *
-     * <p>
-     * NOTE: full reverse-move logic is implemented in a later step; for now this is
-     * the entry point.
-     */
+
     public void undoStepWithAnimation() {
         if (isAnimating || game == null || gameView == null) {
             return;
         }
 
-        // In Player vs AI mode, undo should revert two plies (AI move + player's move)
-        // so the user can replay their move.
         int gameMode = RulesEngine.getGameModeNumber(isTwoPlayerMode, isAIVsAIMode);
         int stepsToUndo = (gameMode == 2) ? 2 : 1;
 
@@ -207,7 +190,7 @@ public class GameController {
         };
 
         Runnable applyUndoStep2 = () -> {
-            // After animating step2, apply its logical undo and finalize.
+            // Después de animar step2, aplica su deshacer lógico y finaliza.
             applyUndo(step2);
             gameView.removeLastMoveFromHistory();
             if (step2.getCapturedPiece() != null) {
@@ -221,7 +204,7 @@ public class GameController {
         };
 
         Runnable afterAnimStep1 = () -> {
-            // After animating step1, apply its logical undo.
+            // Después de animar step1, aplica su deshacer lógico.
             applyUndo(step1);
             gameView.removeLastMoveFromHistory();
             if (step1.getCapturedPiece() != null) {
@@ -259,16 +242,12 @@ public class GameController {
         }
     }
 
-    /**
-     * Redo navigation requested from UI.
-     */
+
     public void redoStepWithAnimation() {
         if (isAnimating || game == null || gameView == null) {
             return;
         }
 
-        // In Player vs AI mode, redo should apply two plies (player move + AI
-        // response).
         int gameMode = RulesEngine.getGameModeNumber(isTwoPlayerMode, isAIVsAIMode);
         int stepsToRedo = (gameMode == 2) ? 2 : 1;
 
@@ -323,8 +302,6 @@ public class GameController {
                         step1.getCapturedPiece().getColor() == PieceColor.WHITE);
             }
 
-            // Refresh only affected squares before starting the second animation to reduce
-            // jumps.
             chessBoard.updateSquaresForStep(step1);
             gameView.updateUIFromController();
             gameView.updateTimers();
@@ -343,7 +320,6 @@ public class GameController {
             finishRedoAll.run();
         };
 
-        // Animate step1 (first redo). Step2 (if any) will be animated afterwards.
         Move forward1 = step1.getMove();
         if (step1.isCastling()) {
             Move rookForward1 = new Move(step1.getRookFrom(), step1.getRookTo());
@@ -423,7 +399,6 @@ public class GameController {
         board.setPieceAt(move.getTo(), mover);
         board.setPieceAt(move.getFrom(), null);
 
-        // --- NUEVO: Actualizar hasMoved al redescubrir el paso (redo) ---
         if (mover instanceof King) {
             ((King) mover).setHasMoved(true);
         } else if (mover instanceof Rook) {
@@ -543,9 +518,9 @@ public class GameController {
     private void handleMoveAttempt(Position targetPosition, PieceColor currentTurn) {
         Move attemptedMove = new Move(selectedPosition, targetPosition);
 
-        // Check if user is clicking on the hinted destination square
+        // Verifica si el usuario hace clic en el cuadrado de destino sugerido
         if (hintedMove != null && hintedMove.getTo().equals(targetPosition)) {
-            // Prioritize the hinted move
+            // Prioriza el movimiento sugerido
             attemptedMove = hintedMove;
             hintedMove = null;
         }
@@ -611,9 +586,8 @@ public class GameController {
         PauseTransition initialPause = new PauseTransition(Duration.millis(50));
         initialPause.setOnFinished(e -> {
             if (game.isGameOver()) {
-                // Si el juego terminó durante la animación, restaurar el tablero y mostrar
-                // EndScreen
-                updateBoardState(); // restaura visualmente el tablero
+
+                updateBoardState(); 
                 isAnimating = false;
                 showEndScreenIfNeeded(new chess.rules.MoveResult(
                         false, move, game.getTurn(), null, false, false, false, false, false, true,
@@ -647,8 +621,8 @@ public class GameController {
                                 (to.getCol() > from.getCol() ? "Kingside" : "Queenside") + ")";
 
                         if (result.isCheck()) {
-                            moveDescription += " - CHECK!";
-                            // Highlight the King in check
+                            moveDescription += " - ¡JAQUE!";
+                            // Resalta el Rey en jaque
                             Position kingPos = findKingPosition(game.getTurn());
                             if (kingPos != null) {
                                 chessBoard.highlightKingInCheck(kingPos);
@@ -775,8 +749,7 @@ public class GameController {
                         }
 
                         if (game.getGameClock().hasTimeExpired(game.getTurn())) {
-                            // Si se acabó el tiempo después del movimiento, congelar UI y mostrar pantalla
-                            // de fin
+
                             game.stopClock();
                             statusBar.setStatus(game.getTurn() + " ran out of time! Game Over.");
                             showEndScreenIfNeeded(new chess.rules.MoveResult(
@@ -796,7 +769,6 @@ public class GameController {
 
                     chessBoard.highlightMove(move);
 
-                    // Apply check highlighting AFTER move highlight so it's not overwritten
                     if (moveSuccessful && isCheckMove) {
                         Position kingPos = findKingPosition(game.getTurn());
                         if (kingPos != null) {
@@ -821,9 +793,7 @@ public class GameController {
         if (gameView == null || gameView.getRoot() == null || gameView.getRoot().getScene() == null) {
             return;
         }
-        // Siempre detener el checker al mostrar EndScreen, pero se reiniciará al
-        // reiniciar el tablero
-        stopTimeoutChecker(); // Detener verificación periódica al mostrar EndScreen
+        stopTimeoutChecker(); 
 
         PieceColor winnerColor = result.getNextTurn().opposite();
 
@@ -832,25 +802,17 @@ public class GameController {
         boolean timeout = gameResultMessage != null && gameResultMessage.contains("ran out of time");
 
         if (timeout) {
-            // Determinar modo de juego
+
             boolean isPvP = isTwoPlayerMode;
             boolean isAIVsAI = isAIVsAIMode;
-            // boolean isPvAI = !isPvP && !isAIVsAI; // Removed unused variable
 
-            // El jugador que NO se quedó sin tiempo es el ganador
-            // result.getNextTurn() es el que perdió por tiempo
             PieceColor loser = result.getNextTurn();
             PieceColor winner = loser.opposite();
 
             if (isPvP || isAIVsAI) {
-                // En PvP y AIvAI, mostrar WIN para el ganador, LOSE para el perdedor
-                // Suponiendo que la pantalla se muestra para ambos, aquí WIN si el jugador
-                // local es el ganador
-                // Para simplificar, WIN si winner es WHITE, LOSE si es BLACK (ajusta si tu UI
-                // es diferente)
+
                 screenResult = (winner == PieceColor.WHITE) ? GameEndScreen.Result.WIN : GameEndScreen.Result.LOSE;
             } else { // PvAI
-                // Si el humano perdió por tiempo, LOSE; si la IA perdió por tiempo, WIN
                 boolean humanIsWhite = !(game.getWhitePlayer() instanceof AIPlayer);
                 boolean humanLost = (loser == PieceColor.WHITE && humanIsWhite)
                         || (loser == PieceColor.BLACK && !humanIsWhite);
@@ -873,17 +835,12 @@ public class GameController {
 
         javafx.stage.Stage owner = (javafx.stage.Stage) gameView.getRoot().getScene().getWindow();
 
-        // Forzar la apertura de la EndScreen en el hilo de JavaFX
         javafx.application.Platform.runLater(() -> {
             GameEndScreen endScreen = new GameEndScreen(owner, screenResult, gameResultMessage);
             endScreen.setOnBackToMenu(() -> {
                 javafx.application.Platform.runLater(() -> {
                     if (gameView != null) {
                         gameView.handleBackToMenu();
-                        // Inicia una nueva partida automáticamente tras volver al menú
-                        // Si quieres un retardo, puedes agregar un PauseTransition aquí
-                        // gameView.triggerBackToMenu(); // Solo si necesitas forzar el menú
-                        // Por defecto, handleBackToMenu() ya gestiona el flujo
                     }
                 });
             });
@@ -943,19 +900,12 @@ public class GameController {
         }
     }
 
-    /**
-     * Allows the view to request an AI move when it's the AI's turn (e.g., when the
-     * human plays with black).
-     */
+
     public void triggerAIMoveIfNeeded() {
         handleAITurn();
     }
 
-    /**
-     * AI vs AI mode uses {@link chess.game.AIMatch} which drives moves via
-     * {@code executeMoveWithAnimation}. We still want to show the end screen when
-     * the match ends, so we expose a small hook for GameView.
-     */
+
     public void onAIMatchGameOver() {
         if (!isAIVsAIMode) {
             return;
@@ -983,7 +933,6 @@ public class GameController {
     private void updateUI() {
         updateBoardState();
 
-        // Check if current player's King is in check
         MoveResult result = RulesEngine.currentGameState(game);
         if (result.isCheck()) {
             Position kingPos = findKingPosition(game.getTurn());
@@ -1152,14 +1101,12 @@ public class GameController {
     }
 
     public Move bestMove() {
-        // Get the AI depth from the current game's AI player
         int aiDepth = 3; // Default depth
         
         PieceColor currentTurn = game.getTurn();
         chess.game.Player whitePlayer = game.getWhitePlayer();
         chess.game.Player blackPlayer = game.getBlackPlayer();
         
-        // Check if either player is an AI and get their depth
         if (whitePlayer instanceof AIPlayer) {
             aiDepth = ((AIPlayer) whitePlayer).getDepth();
         } else if (blackPlayer instanceof AIPlayer) {
