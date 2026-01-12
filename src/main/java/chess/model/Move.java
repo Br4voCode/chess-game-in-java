@@ -7,6 +7,7 @@ public class Move implements Serializable {
     private final Position from;
     private final Position to;
     private final Piece promotion;
+    private int value = -1000;
 
     public Move(Position from, Position to) {
         this(from, to, null);
@@ -16,6 +17,14 @@ public class Move implements Serializable {
         this.from = from;
         this.to = to;
         this.promotion = promotion;
+    }
+
+    public void setValue(int num) {
+        this.value = num;
+    }
+
+    public int getValue() {
+        return this.value;
     }
 
     public Position getFrom() {
