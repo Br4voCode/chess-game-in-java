@@ -57,7 +57,7 @@ public class StartScreen {
 
         VBox mainPanel = createMainPanel();
         
-        // Envuelvo el contenido en un StackPane para permitir overlays
+        
         mainContainer = new StackPane();
         mainContainer.getChildren().add(root);
         root.setCenter(mainPanel);
@@ -178,7 +178,7 @@ public class StartScreen {
     }
 
     private void loadPersistedSettings() {
-        // Las configuraciones persistidas ahora se cargan desde el diálogo
+        
     }
 
     private void showGameOptionsDialog(String gameMode, BiConsumer<PieceColor, Integer> callback) {
@@ -187,13 +187,13 @@ public class StartScreen {
 
         currentDialog.showDialog(
             () -> {
-                // Cuando se confirma
+                
                 callback.accept(currentDialog.getSelectedColor(), currentDialog.getSelectedDifficulty());
                 mainContainer.getChildren().remove(currentDialog.getContainer());
                 currentDialog = null;
             },
             () -> {
-                // Cuando se cancela
+                
                 mainContainer.getChildren().remove(currentDialog.getContainer());
                 currentDialog = null;
             }

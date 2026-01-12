@@ -173,7 +173,7 @@ public class Main extends Application {
                 GameTree tree = new GameTree(new Board(), PieceColor.WHITE);
                 SimpleEvaluator evaluator = new SimpleEvaluator();
                 
-                updateTitle("🌳 Iniciando construcción del árbol de búsqueda (profundidad máxima: " + warmDepth + ")");
+                updateTitle("Iniciando construcción del árbol de búsqueda (profundidad máxima: " + warmDepth + ")");
                 
                 for (int layer = 1; layer <= warmDepth; layer++) {
                     if (isCancelled()) {
@@ -233,20 +233,20 @@ public class Main extends Application {
                     }
                     
                     long elapsed = System.currentTimeMillis() - startTime;
-                    updateTitle("✅ Capa " + layer + " completada: " + nodeCount[0] + " nodos en " + elapsed + "ms");
+                    updateTitle("Capa " + layer + " completada: " + nodeCount[0] + " nodos en " + elapsed + "ms");
                     
                     double progress = 0.05 + 0.80 * (layer / (double) warmDepth);
                     updateMessage("Explorando capa " + layer + " / " + warmDepth);
                     updateProgress(Math.min(progress, 0.9), 1);
                 }
                 
-                updateTitle("🔄 Propagando evaluaciones minimax...");
+                updateTitle("Propagando evaluaciones minimax...");
                 MinimaxTreeSearch search = new MinimaxTreeSearch(
                         tree,
                         (board, perspective) -> evaluator.evaluate(board, perspective),
                         PieceColor.WHITE);
                 search.runAndGetBestMove();
-                updateTitle("✨ Rama representativa establecida");
+                updateTitle("Rama representativa establecida");
                 updateMessage("Afinando heurística inicial");
                 updateProgress(0.93, 1);
             }

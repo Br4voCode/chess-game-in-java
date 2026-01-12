@@ -33,13 +33,13 @@ public class GameOptionsDialog {
     }
 
     private void initDialog(String gameMode) {
-        // Fondo semi-transparente
+        
         VBox backdrop = new VBox();
         backdrop.setStyle("-fx-background-color: rgba(0,0,0,0.5);");
         backdrop.setPrefHeight(Double.MAX_VALUE);
         backdrop.setPrefWidth(Double.MAX_VALUE);
 
-        // Contenido del diálogo
+        
         VBox mainContent = new VBox(20);
         mainContent.setPadding(new Insets(30));
         mainContent.setStyle(
@@ -111,7 +111,7 @@ public class GameOptionsDialog {
 
         mainContent.getChildren().addAll(titleLabel, contentBox, buttonBox);
 
-        // Centro el diálogo en el StackPane
+        
         StackPane.setAlignment(mainContent, Pos.CENTER);
         container.getChildren().addAll(backdrop, mainContent);
         container.setPrefHeight(Double.MAX_VALUE);

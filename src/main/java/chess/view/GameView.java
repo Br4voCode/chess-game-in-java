@@ -697,7 +697,7 @@ public class GameView {
     }
 
     /**
-     * بدء مباراة آلية بين ذكاءين اصطناعيين
+     * Inicia un duelo automático entre dos IAs
      */
     private void startAIVsAIMatch() {
         if (gameInstance == null || !(gameInstance.getWhitePlayer() instanceof AIPlayer) ||

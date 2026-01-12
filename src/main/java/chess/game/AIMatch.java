@@ -5,8 +5,8 @@ import chess.model.PieceColor;
 import javafx.application.Platform;
 
 /**
- * 管理两个人工智能之间自动比赛的类。
- * 不需要用户干预即可自动执行移动。
+ * Gestiona un duelo automático entre dos IAs.
+ * Los movimientos se ejecutan sin intervención del usuario.
  */
 public class AIMatch {
     private Game game;
@@ -157,21 +157,21 @@ public class AIMatch {
     }
 
     /**
-     * تعيين callback الذي يتم تنفيذه عند انتهاء المباراة
+     * Asigna el callback que se ejecuta cuando termina la partida
      */
     public void setOnGameOver(Runnable onGameOver) {
         this.onGameOver = onGameOver;
     }
 
     /**
-     * تعيين callback الذي يتم تنفيذه بعد كل حركة
+     * Asigna el callback que se ejecuta después de cada movimiento
      */
     public void setOnMoveExecuted(MoveCallback onMoveExecuted) {
         this.onMoveExecuted = onMoveExecuted;
     }
 
     /**
-     * تعيين التأخير بين الحركات (بالميلي ثانية)
+     * Asigna el retraso entre movimientos (en milisegundos)
      */
     public void setDelayBetweenMoves(long delayMs) {
         this.delayBetweenMoves = Math.max(100, delayMs);
@@ -206,7 +206,7 @@ public class AIMatch {
     }
 
     /**
-     * تعيين الحد الأقصى للحركات
+     * Asigna el máximo número de movimientos permitidos
      */
     public void setMaxMoves(int maxMoves) {
         this.maxMoves = maxMoves;

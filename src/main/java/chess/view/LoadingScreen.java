@@ -82,7 +82,7 @@ public class LoadingScreen {
         statusLabel = new Label("Iniciando...");
         statusLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.78); -fx-font-size: 15px;");
 
-        // Crear área de logs en lugar de un label simple
+        
         logsArea = new TextArea();
         logsArea.setPrefHeight(180);
         logsArea.setPrefWidth(560);
@@ -176,7 +176,7 @@ public class LoadingScreen {
         progressBar.progressProperty().bind(task.progressProperty());
         statusLabel.textProperty().bind(task.messageProperty());
         
-        // Bind el título como logs en el área de texto
+        
         task.titleProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null && !newVal.isBlank()) {
                 addLogBatch(newVal);

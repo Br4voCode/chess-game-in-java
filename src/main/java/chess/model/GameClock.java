@@ -8,8 +8,8 @@ import java.io.Serializable;
 public class GameClock implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    // Para pruebas: 5 segundos
-    // 5 minutos por jugador
+    
+    
     private static final long INITIAL_TIME_MILLIS = 5 * 60 * 1000;
 
     private long whiteTimeRemainingMillis;

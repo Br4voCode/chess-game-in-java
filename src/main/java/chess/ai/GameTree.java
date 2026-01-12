@@ -45,7 +45,7 @@ public class GameTree {
                 onNodeVisited.accept(n);
             }
             
-            // Log progress every 1000 nodes
+            
             if (nodeCount[0] % 1000 == 0) {
                 long elapsed = System.currentTimeMillis() - startTime;
                 logger.log("  → Nivel " + n.getDepth() + ": " + nodeCount[0] + " nodos construidos (" + elapsed + "ms)");

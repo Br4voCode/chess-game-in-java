@@ -52,10 +52,10 @@ public class GameLogger {
      * Log a message to all listeners
      */
     public void log(String message) {
-        // Also print to system out for debugging
+        
         System.out.println(message);
         
-        // Notify all listeners
+        
         for (LogListener listener : listeners) {
             listener.onLogMessage(message);
         }

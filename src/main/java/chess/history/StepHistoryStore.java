@@ -58,13 +58,13 @@ public class StepHistoryStore {
             Object first = ois.readObject();
             
             if (first instanceof GameMetadata) {
-                // New format: metadata + list
+                
                 gameMetadata = (GameMetadata) first;
                 @SuppressWarnings("unchecked")
                 List<Step> loaded = (List<Step>) ois.readObject();
                 return loaded != null ? loaded : new ArrayList<>();
             } else if (first instanceof List) {
-                // Old format: just list (backward compatibility)
+                
                 gameMetadata = null;
                 @SuppressWarnings("unchecked")
                 List<Step> loaded = (List<Step>) first;

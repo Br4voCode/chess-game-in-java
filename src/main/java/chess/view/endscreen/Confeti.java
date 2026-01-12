@@ -13,11 +13,8 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Lluvia simple de confeti (JavaFX).
- *
- * - Genera pequeñas piezas de distintos colores
- * - Caen desde la parte superior con ligera deriva lateral y rotación
- * - Pensado para usarse como capa visual en un StackPane
+ * Efecto visual de confeti cayendo. Se usa en la pantalla de victoria.
+ * Las piezas caen desde arriba con rotación y movimiento lateral.
  */
 public final class Confeti extends Pane {
 

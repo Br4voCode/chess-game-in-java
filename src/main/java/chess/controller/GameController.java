@@ -29,7 +29,7 @@ import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
 /**
- * متحكم يدير منطق التفاعل بين الواجهة والنموذج
+ * Controla la lógica del juego y la interacción entre la interfaz y el modelo.
  */
 public class GameController {
     // --- NUEVO: Verificación periódica de tiempo agotado ---

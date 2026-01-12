@@ -19,16 +19,12 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
 /**
- * Pop-up modal para el final de partida con 3 variantes: WIN, LOSE y DRAW.
- *
- * Características comunes:
- * - Ventana tipo pop-up (sin bordes) y modal.
- * - Botón "Aceptar" (por ahora solo cierra).
- *
- * Variantes:
- * - WIN: rey verde + confeti.
- * - LOSE: rey rojo.
- * - DRAW: símbolo azul de empate.
+ * Pantalla modal que aparece al finalizar una partida.
+ * 
+ * Tiene tres variantes:
+ * - WIN: victoria (rey verde con confeti)
+ * - LOSE: derrota (rey rojo)
+ * - DRAW: empate (símbolo neutro)
  */
 public final class GameEndScreen {
 

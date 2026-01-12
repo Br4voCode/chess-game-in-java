@@ -30,7 +30,7 @@ public class LogConsole {
         logsArea.setStyle("-fx-control-inner-background: #1e1e1e; -fx-text-fill: #00ff00; -fx-font-family: 'Courier New'; -fx-font-size: 10px;");
         logsArea.setPrefHeight(200);
         
-        // Register this console as a listener to the game logger
+        
         GameLogger.getInstance().addListener(this::log);
     }
 
@@ -76,7 +76,7 @@ public class LogConsole {
         }
         logsArea.setText(sb.toString());
         
-        // Auto-scroll to the bottom
+        
         logsArea.positionCaret(logsArea.getLength());
     }
 

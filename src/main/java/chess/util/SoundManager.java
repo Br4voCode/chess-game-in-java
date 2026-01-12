@@ -15,7 +15,7 @@ public class SoundManager {
      */
     public static void playSound(String soundFileName) {
         try {
-            // Obtener el archivo de recursos
+            
             URL soundURL = SoundManager.class.getResource("/" + soundFileName);
             
             if (soundURL == null) {
@@ -23,7 +23,7 @@ public class SoundManager {
                 return;
             }
             
-            // Reproducir el sonido en un hilo separado para no bloquear la UI
+            
             new Thread(() -> {
                 try {
                     Media media = new Media(soundURL.toString());

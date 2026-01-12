@@ -317,13 +317,13 @@ public class ChessBoard {
 			updateSingleSquare(move.getTo());
 		}
 
-		// Castling also moves the rook.
+		
 		if (step.isCastling() && step.getRookFrom() != null && step.getRookTo() != null) {
 			updateSingleSquare(step.getRookFrom());
 			updateSingleSquare(step.getRookTo());
 		}
 
-		// En-passant removes/restores a pawn from a different square.
+		
 		if (step.isEnPassant() && step.getEnPassantCapturedPawnPos() != null) {
 			updateSingleSquare(step.getEnPassantCapturedPawnPos());
 		}
